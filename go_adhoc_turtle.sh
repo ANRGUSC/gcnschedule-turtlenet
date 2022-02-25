@@ -8,6 +8,5 @@ sudo ip link set wlan0 down
 sleep 1
 sudo iwconfig wlan0 mode ad-hoc
 sudo iwconfig wlan0 essid 'TurtleNet'
-sudo ip link set wlan0 up
 sleep 1
-sudo ip addr add $IPADDR dev wlan0
+sudo ifconfig wlan0 $IPADDR netmask 255.255.255.0 up
