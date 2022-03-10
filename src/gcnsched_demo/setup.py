@@ -21,7 +21,9 @@ setup(
     entry_points={
         'console_scripts': [
             'scheduler = gcnsched_demo.scheduler:main',
-            'sample_node = gcnsched_demo.sample_node:main'
+            'sample_node = gcnsched_demo.sample_node:main',
+            'service = gcnsched_demo.service_member_function:main',
+            'client = gcnsched_demo.client_member_function:main',
         ],
     },
 )
