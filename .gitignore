@@ -4,3 +4,6 @@ src/gcnsched_demo/install/*
 src/gcnsched_demo/build/*
 go_adhoc_turtle.sh
 pc_tools/pc_adhoc.sh
+src/log/*
+src/install/*
+src/build/*
