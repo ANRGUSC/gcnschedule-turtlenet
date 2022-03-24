@@ -23,7 +23,7 @@ setup(
             'scheduler = gcnsched_demo.scheduler:main',
             'sample_node = gcnsched_demo.sample_node:main',
             'service = gcnsched_demo.bandwidth_server:main',
-            'client = gcnsched_demo.bandwidth_client:main',
+            'client = gcnsched_demo.bandwidth_client_timer:main',
         ],
     },
 )
