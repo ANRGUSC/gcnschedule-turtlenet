@@ -11,9 +11,8 @@ class MinimalService(Node):
         self.srv = self.create_service(Bandwidth, 'bandwidth_service', self.bandwidth_server_callback)
 
     def bandwidth_server_callback(self, request, response):
-        response.b = "response from service"
+        response.b = request.a
         self.get_logger().info('Incoming request\na: %s' % request.a)
-
         return response
 
 
