@@ -6,6 +6,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 import time
+import timeit
 
 
 class MinimalClientAsync(Node):
@@ -13,15 +14,21 @@ class MinimalClientAsync(Node):
     def __init__(self):
         super().__init__('minimal_client_async')
 
+        # Publishers
         self.rtt_publisher_ = self.create_publisher(Float64, 'rtt', 10)
         self.bw_publisher_ = self.create_publisher(Float64, 'bandwidth', 10)
+        self.exec_time_publisher_ = self.create_publisher(Float64, 'exec_time', 10)
 
+        # Bandwidth service client
         cb_group = ReentrantCallbackGroup()
         self.cli = self.create_client(Bandwidth, 'bandwidth_service', callback_group=cb_group)
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = Bandwidth.Request()
+
+        # Timers
         timer = self.create_timer(1, self.call_service, callback_group=cb_group) # TODO choose timer period
+        execution_timer = self.create_timer(10, self.test_execute, callback_group=cb_group) # TODO choose timer period
 
     # def send_request(self):
     #     self.req.a = "hello"
@@ -57,6 +64,18 @@ class MinimalClientAsync(Node):
                 self.get_logger().info('Service call failed %r' % (future.exception(),))
         finally:
             pass
+
+    async def test_execute(self):
+        # do some computation
+        test_computation = "[(a, b) for a in (1, 3, 5) for b in (2, 4, 6)]"
+        test_num_times = 1000
+        exec_time = Float64()
+        exec_time.data = timeit.timeit(test_computation, number=test_num_times)
+        self.exec_time_publisher_.publish(exec_time)
+        self.get_logger().info(
+            'Result of %s; %d times, Time taken = %f' %
+            (test_computation, test_num_times, exec_time.data))
+
 
 def main(args=None):
     rclpy.init(args=args)
