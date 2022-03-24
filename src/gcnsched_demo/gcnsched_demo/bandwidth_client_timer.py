@@ -54,7 +54,7 @@ def main(args=None):
     while not cli.wait_for_service(timeout_sec=1.0):
         node.get_logger().info('service not available, waiting again...')
 
-    timer = node.create_timer(1, call_service, callback_group=cb_group)  # every 2 seconds
+    timer = node.create_timer(5, call_service, callback_group=cb_group)  # every 5 seconds
 
     # while rclpy.ok() and not did_run:
     #     rclpy.spin_once(node)
