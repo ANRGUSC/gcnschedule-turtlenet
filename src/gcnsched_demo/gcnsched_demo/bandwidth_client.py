@@ -21,7 +21,7 @@ class MinimalClientAsync(Node):
 
         # Bandwidth service client
         cb_group = ReentrantCallbackGroup()
-        self.cli = self.create_client(Bandwidth, 'bandwidth_service', callback_group=cb_group)
+        self.cli = self.create_client(Bandwidth, '/robot1/bandwidth_service', callback_group=cb_group)
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = Bandwidth.Request()

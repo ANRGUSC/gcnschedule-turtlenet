@@ -2,5 +2,11 @@
 src/gcnsched_demo/log/*
 src/gcnsched_demo/install/*
 src/gcnsched_demo/build/*
+build/*
+install/*
+log/*
+src/build/*
+src/install/*
+src/log/*
 go_adhoc_turtle.sh
 pc_tools/pc_adhoc.sh
