@@ -1,8 +1,7 @@
 {
     "execution_id": "abcdef",
     "data": {
-        "task_1": "<serialized_data>",
-        "task_2": "<serialized_data>"
+        "task_1": "<serialized_data>"
     },
     "task_graph": {
         "task_1": [],

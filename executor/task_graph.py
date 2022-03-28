@@ -1,8 +1,10 @@
 from base64 import b64encode, b64decode
-from typing import Any, Callable, Dict, List
+import pathlib
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import pickle
-
-import numpy as np
+import matplotlib.pyplot as plt
+import networkx as nx
+from networkx.drawing.nx_agraph import graphviz_layout
 
 def deserialize(text: str) -> Any:
     return pickle.loads(b64decode(text))
@@ -55,6 +57,34 @@ class TaskGraph:
             f"{task.name} <- [{', '.join([dep.name for dep in deps])}]"
             for task, deps in self.task_deps.items()
         ])
+
+    def to_networkx(self) -> nx.DiGraph:
+        graph = nx.DiGraph()
+        for task, deps in self.task_deps.items():
+            for dep in deps:
+                graph.add_edge(dep.name, task.name)
+        return graph
+
+    def draw(self, 
+             ax: Optional[plt.Axes] = None,
+             save: Optional[Union[str, pathlib.Path]] = None) -> Tuple[plt.Figure, plt.Axes]:
+        graph = self.to_networkx()
+        pos = graphviz_layout(graph, prog='dot')
+        if ax is None:
+            fig, ax = plt.subplots()
+        else:
+            fig = ax.get_figure()
+
+        nx.draw(
+            graph, pos, ax=ax,
+            with_labels=True, arrows=True
+        )
+
+        if save is not None:
+            save = pathlib.Path(save)
+            save.parent.mkdir(exist_ok=True, parents=True)
+            fig.savefig(str(save))
+        return fig, ax
 
     def start_tasks(self) -> List[str]:
         return [
