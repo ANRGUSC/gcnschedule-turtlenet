@@ -16,7 +16,3 @@ RUN apt update \
 
 RUN apt install -y python3-pip \
     && pip3 install -U argcomplete
-
-USER gitpod
-SHELL ["/bin/bash", "-c"]
-RUN source /opt/ros/dashing/setup.bash 
