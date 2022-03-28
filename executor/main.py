@@ -5,6 +5,10 @@ import numpy as np
 from task_graph import TaskGraph, deserialize, serialize
 import json
 
+import pathlib
+
+thisdir = pathlib.Path(__file__).resolve().parent
+
 class Node:
     def __init__(self, name: str, graph: TaskGraph) -> None:
         self.name = name
@@ -77,7 +81,7 @@ class Network:
             "data": {},
             "task_graph": graph.summary(),
             "schedule": schedule
-        })
+        }, indent=2)
 
         for task in graph.start_tasks():
             node = schedule[task]
@@ -86,6 +90,7 @@ class Network:
 
 def get_graph():
     graph = TaskGraph()
+    
     @graph.task()
     def generate_data() -> np.array:
         return np.zeros(100)
@@ -114,6 +119,9 @@ def get_graph():
 
 def main():
     graph = get_graph()
+
+    graph.draw(save=thisdir.joinpath("task_graph.png"))
+
     network = Network(
         nodes=[
             Node(f"node_{i}", graph=graph) 
