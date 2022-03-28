@@ -12,4 +12,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y libpython3-dev python3-pip \
     && pip3 install -U argcomplete
 
 USER gitpod
-RUN echo "source ~/ros2_foxy/ros2-linux/setup.bash" >> ~/.bashrc
+RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
