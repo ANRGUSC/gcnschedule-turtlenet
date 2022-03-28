@@ -14,7 +14,9 @@ RUN apt update && apt install -y curl gnupg2 lsb-release \
 RUN apt update \
     && apt install -y ros-dashing-desktop
 
-SHELL ["/bin/bash", "-c"]
-RUN source /opt/ros/dashing/setup.bash \
-    && apt install -y python3-pip \
+RUN apt install -y python3-pip \
     && pip3 install -U argcomplete
+
+USER gitpod
+SHELL ["/bin/bash", "-c"]
+RUN source /opt/ros/dashing/setup.bash 
