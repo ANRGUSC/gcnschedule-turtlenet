@@ -27,6 +27,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Num.msg"
   "srv/AddThreeInts.srv"
   "srv/Bandwidth.srv"
+  "srv/Executor.srv"
  )
 
 if(BUILD_TESTING)

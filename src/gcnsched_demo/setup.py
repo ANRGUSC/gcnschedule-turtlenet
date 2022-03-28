@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'executor = gcnsched_demo.executor_node:main',
             'scheduler = gcnsched_demo.scheduler:main',
             'sample_node = gcnsched_demo.sample_node:main',
             'service = gcnsched_demo.bandwidth_server:main',
