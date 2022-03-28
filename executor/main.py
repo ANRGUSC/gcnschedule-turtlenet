@@ -34,6 +34,7 @@ class Node:
         ]
 
         for task in tasks:
+            print(f"EXECUTING {task} ON {self.name}")
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
@@ -55,9 +56,6 @@ class Node:
                     self.process_message(msg) 
                 else:
                     print(f"SEND {self.name} -> {next_node}:\n", msg)
-            
-
-        print(graph.dependencies("add_noise"))
 
 def main():
     node = Node("node_1", graph)
@@ -69,7 +67,7 @@ def main():
             "generate_data": "node_1",
             "mean": "node_1",
             "min": "node_2",
-            "max": "node_2",
+            "max": "node_3",
             "midpoint": "node_3",
             "add_noise": "node_1"
         }
