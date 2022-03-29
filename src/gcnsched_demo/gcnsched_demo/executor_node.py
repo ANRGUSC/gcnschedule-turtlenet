@@ -1,13 +1,14 @@
+import os
 from interfaces.srv import Executor
 import rclpy
 from rclpy.node import Node, Client
 
 import json
-from task_graph import TaskGraph, deserialize, get_graph
 from typing import Dict, List, Set, Generator, Tuple, Any
 from queue import Queue
 from threading import Thread
 
+from .task_graph import TaskGraph, deserialize, get_graph
 
 class ExecutorNode(Node):
     def __init__(self, 
@@ -26,16 +27,16 @@ class ExecutorNode(Node):
             self.executor_callback
         )
 
-        self.clients: Dict[str, Client] = {}
+        self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
-            self.clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
+            self.executor_clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
 
     def executor_callback(self, request, response) -> str:
         self.queue.put(request.input)
-        response.output = "ack"
+        response.output = "ACK"
         return response
 
     def proccessing_thread(self) -> None:
@@ -44,8 +45,8 @@ class ExecutorNode(Node):
             for next_node, out_msg in self.process_message(msg):
                 req = Executor.Request()
                 req.input = out_msg
-                res = self.clients[next_node].call(req)
-                print(f"Acknowledgment from {next_node}: ", res.output)
+                res = self.executor_clients[next_node].call(req)
+                print(f"ACK FROM {next_node}: {res.output}")
 
     def process_message(self, msg_str: str) -> Generator[Tuple[str, str], None, None]:
         msg: Dict[str, Any] = json.loads(msg_str)
@@ -81,7 +82,7 @@ class ExecutorNode(Node):
                 if task in deps
             }
             if not next_nodes:
-                print(f"OUTPUT: {task}: {deserialize(task_output)}")
+                print(f"OUTPUT {task}: {deserialize(task_output)}")
             for next_node in next_nodes:
                 msg = json.dumps(
                     {
@@ -101,11 +102,12 @@ class ExecutorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    ALL_NODES = ["node_1", "node_2", "node_3"]
+    name = os.environ["NODE_NAME"]
+    all_nodes = os.environ["ALL_NODES"].split(",")
     executor = ExecutorNode(
-        name=args.name,
+        name=name,
         graph=get_graph(),
-        other_nodes=[node for node in ALL_NODES if node != args.name]
+        other_nodes=[node for node in all_nodes if node != name]
     )
 
     while rclpy.ok():

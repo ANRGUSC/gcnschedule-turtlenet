@@ -3,3 +3,13 @@ vscode:
   extensions:
     - "ms-azuretools.vscode-docker"
     - "ms-python.python"
+tasks:
+  - init: |
+      docker pull ros:dashing
+      docker build -t smile_ros -f ros.Dockerfile .
+      docker build -t rosboard -f rosboard.Dockerfile .
+      docker pull amir20/dozzle:latest
+    command: $ docker run --name dozzle -d --volume=/var/run/docker.sock:/var/run/docker.sock -p 8888:8080 amir20/dozzle:latest
+ports:
+  - port: 8888
+    visibility: private

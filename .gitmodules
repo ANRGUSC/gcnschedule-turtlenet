@@ -1,0 +1,3 @@
+[submodule "rosboard"]
+	path = rosboard
+	url = https://github.com/dheera/rosboard

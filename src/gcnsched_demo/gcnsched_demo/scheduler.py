@@ -1,15 +1,15 @@
+import time
 from typing import Dict, List, Any
-from urllib.request import Request
-from gcnsched_demo.gcnsched_demo.executor_node import ExecutorNode
 import rclpy
 from rclpy.node import Node, Client
 
 from std_msgs.msg import String
 from interfaces.srv import Executor
 from interfaces.msg import Num # custom msg type
-from task_graph import TaskGraph, get_graph
 import json
 from uuid import uuid4
+
+from .task_graph import TaskGraph, get_graph
 
 class Scheduler(Node):
 
@@ -20,16 +20,13 @@ class Scheduler(Node):
         print("INIT")
         super().__init__('scheduler')
         self.publisher_ = self.create_publisher(Num, 'scheduler_status', 10)
-        timer_period = 1  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.i = 0
 
         self.graph = graph
         self.schedule = schedule
 
-        self.clients: Dict[str, Client] = {}
+        self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
-            self.clients[node] = self.create_client(Executor, f'/{node}/executor')
+            self.executor_clients[node] = self.create_client(Executor, f'/{node}/executor')
 
     def execute(self) -> Any:
         print("EXECUTING")
@@ -45,8 +42,7 @@ class Scheduler(Node):
             
             req = Executor.Request()
             req.input = message
-            res = self.clients[node].call(req)
-            print(f"Acknowledgement: {res.output}")
+            res = self.executor_clients[node].call(req)
 
     # def timer_callback(self):
     #     msg = Num()
@@ -57,24 +53,27 @@ class Scheduler(Node):
 
 
 def main(args=None):
-    print("HERE")
     rclpy.init(args=args)
 
     gcn_sched = Scheduler(
-        nodes=["node_1", "node_2", "node_3"],
+        nodes=["executor_1", "executor_2", "executor_3"],
         graph=get_graph(),
         schedule={
-            "generate_data": "node_1",
-            "add_noise": "node_1",
-            "mean": "node_2",
-            "min": "node_1",
-            "max": "node_2",
-            "midpoint": "node_3",
+            "generate_data": "executor_1",
+            "add_noise": "executor_1",
+            "mean": "executor_2",
+            "min": "executor_1",
+            "max": "executor_2",
+            "midpoint": "executor_3",
         }
     )
-    gcn_sched.execute()
 
-    rclpy.spin(gcn_sched)
+    time.sleep(5)
+    while True:
+        gcn_sched.execute()
+        print("Spinning")
+        rclpy.spin_once(gcn_sched, timeout_sec=1)
+        print("Done Spinning")
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
