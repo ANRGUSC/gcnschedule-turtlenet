@@ -77,9 +77,18 @@ class TaskGraph:
 
 def get_graph() -> TaskGraph:
     graph = TaskGraph()
+    
     @graph.task()
-    def generate_data() -> np.array:
-        return np.zeros(100)
+    def get_data() -> np.array:
+        return 5
+
+    @graph.task()
+    def get_size() -> np.array:
+        return 100
+
+    @graph.task(get_data, get_size)
+    def generate_data(data: float, size: int) -> np.array:
+        return np.ones(size) * data
 
     @graph.task(generate_data)
     def add_noise(arr: np.ndarray) -> np.array:

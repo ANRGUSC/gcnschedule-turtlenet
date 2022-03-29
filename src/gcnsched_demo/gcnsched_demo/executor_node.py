@@ -29,14 +29,23 @@ class ExecutorNode(Node):
 
         self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
-            self.executor_clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
+            self.executor_clients[other_node] = self.create_client(Executor, f'{other_node}/executor')
+            cli = self.create_client(
+                Executor, f'{other_node}/executor'
+            )
+            self.executor_clients[other_node] = cli
+            while not cli.wait_for_service(timeout_sec=1.0):
+                print(f'service {other_node}/executor not available, waiting again...')
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
 
-    def executor_callback(self, request, response) -> str:
+    def executor_callback(self, request, response) -> Executor.Response:
+        print("RECIEVED")
         self.queue.put(request.input)
         response.output = "ACK"
+        
+        print("RESPONDING")
         return response
 
     def proccessing_thread(self) -> None:
@@ -96,6 +105,7 @@ class ExecutorNode(Node):
                 if self.name == next_node:
                     yield from self.process_message(msg) 
                 else:
+                    print(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
 
 

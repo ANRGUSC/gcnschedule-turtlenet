@@ -1,3 +1,6 @@
+.workspaces
+
+# Python stuff
 *.log
 src/gcnsched_demo/log/*
 src/gcnsched_demo/install/*
