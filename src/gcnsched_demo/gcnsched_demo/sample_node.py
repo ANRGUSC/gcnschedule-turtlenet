@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String
+from interfaces.msg import Num
 
 
 class SampleNode(Node):
@@ -13,7 +14,7 @@ class SampleNode(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.i = 0
 
-        self.subscriber_ = self.create_subscription(String, 'scheduler_status', self.scheduler_status_callback, 10)
+        self.subscriber_ = self.create_subscription(Num, 'scheduler_status', self.scheduler_status_callback, 10)
         self.subscriber_
 
     def timer_callback(self):
@@ -24,7 +25,7 @@ class SampleNode(Node):
         self.i += 1
 
     def scheduler_status_callback(self, msg):
-        self.get_logger().info('I heard: "%s"' % msg.data)
+        self.get_logger().info('I heard: "%s"' % msg.num)
 
 
 def main(args=None):

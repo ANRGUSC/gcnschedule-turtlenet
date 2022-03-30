@@ -1,0 +1,52 @@
+version: '3'
+services:
+  executor_1:
+    image: smile_ros
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo executor"
+    volumes:
+      - .workspaces/executor_1:/workspace/
+      - ./src:/workspace/src:ro
+    environment:
+      PYTHONUNBUFFERED: 1
+      ALL_NODES: executor_1,executor_2,executor_3
+      NODE_NAME: executor_1
+  executor_2:
+    image: smile_ros
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo executor"
+    volumes:
+      - .workspaces/executor_2:/workspace/
+      - ./src:/workspace/src:ro
+    environment:
+      PYTHONUNBUFFERED: 1
+      ALL_NODES: executor_1,executor_2,executor_3
+      NODE_NAME: executor_2
+  executor_3:
+    image: smile_ros
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo executor"
+    volumes:
+      - .workspaces/executor_3:/workspace/
+      - ./src:/workspace/src:ro
+    environment:
+      PYTHONUNBUFFERED: 1
+      ALL_NODES: executor_1,executor_2,executor_3
+      NODE_NAME: executor_3
+    
+  scheduler:
+    image: smile_ros
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo scheduler"
+    volumes:
+      - .workspaces/scheduler:/workspace/
+      - ./src:/workspace/src:ro
+    environment:
+      PYTHONUNBUFFERED: 1
+
+  rosboard:
+    image: rosboard
+    volumes:
+      - .workspaces/rosboard:/workspace/
+      - ./src:/workspace/src:ro
+    ports:
+      - 9999:8888
+    command: bash -c "colcon build && . ./install/setup.sh && /rosboard/run"
+    environment:
+      PYTHONUNBUFFERED: 1

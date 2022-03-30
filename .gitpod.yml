@@ -1,4 +1,34 @@
+# image: gitpod/workspace-full
 image:
   file: .gitpod.Dockerfile
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
+    addCheck: false
+    addComment: false
+    addBadge: true
+vscode:
+  extensions:
+    - "ms-azuretools.vscode-docker"
+    - "ms-python.python"
+    - "eamodio.gitlens"
 tasks:
-  - init: source /opt/ros/dashing/setup.bash
+  - init: |
+      docker pull ros:dashing
+      docker build -t smile_ros -f ros.Dockerfile .
+      docker build -t rosboard -f rosboard.Dockerfile .
+      docker pull amir20/dozzle:latest
+    command: docker run --name dozzle -d --volume=/var/run/docker.sock:/var/run/docker.sock -p 8888:8080 amir20/dozzle:latest
+  - init: |
+      git submodule update --init --recursive
+      
+      pip install --upgrade pip
+      pip install -e ./rosboard
+      pip install -e ./edGNN
+      pip install -e ./edGNN/heft
+ports:
+  - port: 8888
+    visibility: private

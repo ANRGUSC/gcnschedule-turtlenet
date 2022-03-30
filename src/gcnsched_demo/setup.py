@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'numpy'],
     zip_safe=True,
     maintainer='lilly',
     maintainer_email='lilliamc@usc.edu',
@@ -20,8 +20,11 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'executor = gcnsched_demo.executor_node:main',
             'scheduler = gcnsched_demo.scheduler:main',
-            'sample_node = gcnsched_demo.sample_node:main'
+            'sample_node = gcnsched_demo.sample_node:main',
+            'service = gcnsched_demo.bandwidth_server:main',
+            'client = gcnsched_demo.bandwidth_client:main',
         ],
     },
 )
