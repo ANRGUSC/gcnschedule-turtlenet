@@ -1,3 +1,7 @@
 [submodule "rosboard"]
 	path = rosboard
-	url = https://github.com/dheera/rosboard
+	url = https://github.com/ANRGUSC/rosboard
+[submodule "edGNN"]
+	path = edGNN
+	url = https://github.com/ANRGUSC/edGNN
+	branch = feature/gcnsched
