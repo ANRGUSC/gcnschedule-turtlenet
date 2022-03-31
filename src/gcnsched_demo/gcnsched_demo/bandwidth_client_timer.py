@@ -47,12 +47,12 @@ def main(args=None):
                     'Result of service: for %s = %s; Time0 = %d, Time1 = %d Time taken = %f' %
                     (req.a, result.b, t0, t1, t1 - t0))
             else:
-                node.get_logger().info('Service call failed %r' % (future.exception(),))
+                node.get_logger().warning('Service call failed %r' % (future.exception(),))
         finally:
             did_get_result = True
 
     while not cli.wait_for_service(timeout_sec=1.0):
-        node.get_logger().info('service not available, waiting again...')
+        node.get_logger().warning('service not available, waiting again...')
 
     timer = node.create_timer(5, call_service, callback_group=cb_group)  # every 5 seconds
 

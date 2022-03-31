@@ -15,7 +15,7 @@ class ExecutorNode(Node):
                  name: str, 
                  graph: TaskGraph,
                  other_nodes: List[str]) -> None:
-        super().__init__(name)
+        super().__init__(f"{name}_executor")
         self.name = name
         self.graph = graph
         self.data: Dict[str, str] = {}
@@ -35,17 +35,14 @@ class ExecutorNode(Node):
             )
             self.executor_clients[other_node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
-                print(f'service {other_node}/executor not available, waiting again...')
+                self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
 
     def executor_callback(self, request, response) -> Executor.Response:
-        print("RECIEVED")
         self.queue.put(request.input)
         response.output = "ACK"
-        
-        print("RESPONDING")
         return response
 
     def proccessing_thread(self) -> None:
@@ -55,7 +52,7 @@ class ExecutorNode(Node):
                 req = Executor.Request()
                 req.input = out_msg
                 res = self.executor_clients[next_node].call(req)
-                print(f"ACK FROM {next_node}: {res.output}")
+                self.get_logger().info(f"ACK FROM {next_node}: {res.output}")
 
     def process_message(self, msg_str: str) -> Generator[Tuple[str, str], None, None]:
         msg: Dict[str, Any] = json.loads(msg_str)
@@ -82,7 +79,7 @@ class ExecutorNode(Node):
         ]
 
         for task in tasks:
-            print(f"EXECUTING {task} ON {self.name}")
+            self.get_logger().info(f"EXECUTING {task} ON {self.name}")
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
@@ -91,7 +88,7 @@ class ExecutorNode(Node):
                 if task in deps
             }
             if not next_nodes:
-                print(f"OUTPUT {task}: {deserialize(task_output)}")
+                self.get_logger().info(f"OUTPUT {task}: {deserialize(task_output)}")
             for next_node in next_nodes:
                 msg = json.dumps(
                     {
@@ -105,7 +102,7 @@ class ExecutorNode(Node):
                 if self.name == next_node:
                     yield from self.process_message(msg) 
                 else:
-                    print(f"SENDING {task} TO {next_node}")
+                    self.get_logger().info(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
 
 

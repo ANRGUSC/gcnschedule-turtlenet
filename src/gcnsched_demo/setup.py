@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'numpy'],
+    install_requires=['setuptools', 'numpy'], #, 'matplotlib', 'networkx'],
     zip_safe=True,
     maintainer='lilly',
     maintainer_email='lilliamc@usc.edu',
@@ -22,9 +22,7 @@ setup(
         'console_scripts': [
             'executor = gcnsched_demo.executor_node:main',
             'scheduler = gcnsched_demo.scheduler:main',
-            'sample_node = gcnsched_demo.sample_node:main',
-            'service = gcnsched_demo.bandwidth_server:main',
-            'client = gcnsched_demo.bandwidth_client:main',
+            'bandwidth = gcnsched_demo.bandwidth_node:main',
         ],
     },
 )
