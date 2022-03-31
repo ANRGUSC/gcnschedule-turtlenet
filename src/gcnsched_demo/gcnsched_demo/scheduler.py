@@ -12,8 +12,8 @@ from uuid import uuid4
 from .task_graph import TaskGraph, get_graph
 
 class Scheduler(Node):
-    def __init__(self, 
-                 nodes: List[str], 
+    def __init__(self,
+                 nodes: List[str],
                  graph: TaskGraph,
                  interval: int) -> None:
         super().__init__('scheduler')
@@ -24,11 +24,11 @@ class Scheduler(Node):
         self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
             cli = self.create_client(
-                Executor, f'{node}/executor'
+                Executor, f'/{node}/executor'
             )
             self.executor_clients[node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
-                print(f'service {node}/executor not available, waiting again...')
+                print(f'service /{node}/executor not available, waiting again...')
 
     def get_schedule(self) -> Dict[str, str]:
         nodes = list(self.executor_clients.keys())
@@ -36,7 +36,7 @@ class Scheduler(Node):
             task: random.choice(nodes)
             for task in self.graph.task_names
         }
-        
+
     def execute(self) -> Any:
         print(f"EXECUTING")
         schedule = self.get_schedule()
@@ -55,7 +55,7 @@ class Scheduler(Node):
             req.input = message
             print(f"SENDING {task} TO {node}")
             futures.append((node, task, self.executor_clients[node].call_async(req)))
-            
+
         return futures
 
     def spin_execute(self) -> None:

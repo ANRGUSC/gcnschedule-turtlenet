@@ -11,11 +11,16 @@ from threading import Thread
 from .task_graph import TaskGraph, deserialize, get_graph
 
 class ExecutorNode(Node):
-    def __init__(self, 
-                 name: str, 
+    def __init__(self,
+                 name: str,
                  graph: TaskGraph,
                  other_nodes: List[str]) -> None:
         super().__init__(name)
+
+        print("****")
+        print(self.get_namespace())
+        print("****")
+
         self.name = name
         self.graph = graph
         self.data: Dict[str, str] = {}
@@ -23,19 +28,21 @@ class ExecutorNode(Node):
         self.queue = Queue()
 
         self.srv = self.create_service(
-            Executor, f'{name}/executor', 
+            Executor,
+            # f'{name}/executor',
+            'executor',
             self.executor_callback
         )
 
         self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
-            self.executor_clients[other_node] = self.create_client(Executor, f'{other_node}/executor')
+            # self.executor_clients[other_node] = self.create_client(Executor, f'{other_node}/executor')
             cli = self.create_client(
-                Executor, f'{other_node}/executor'
+                Executor, f'/{other_node}/executor'
             )
             self.executor_clients[other_node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
-                print(f'service {other_node}/executor not available, waiting again...')
+                print(f'service /{other_node}/executor not available, waiting again...')
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
@@ -44,7 +51,7 @@ class ExecutorNode(Node):
         print("RECIEVED")
         self.queue.put(request.input)
         response.output = "ACK"
-        
+
         print("RESPONDING")
         return response
 
@@ -73,7 +80,7 @@ class ExecutorNode(Node):
         schedule: Dict[str, str] = msg["schedule"]
         task_graph: Dict[str, List[str]] = msg["task_graph"]
         tasks = [
-            task_name for task_name, node_name in schedule.items() 
+            task_name for task_name, node_name in schedule.items()
             if (
                 node_name == self.name and # task should be executed on this node
                 task_name not in self.execution_history[execution_id] and # task has not been executed yet
@@ -103,7 +110,7 @@ class ExecutorNode(Node):
                     indent=2
                 )
                 if self.name == next_node:
-                    yield from self.process_message(msg) 
+                    yield from self.process_message(msg)
                 else:
                     print(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
