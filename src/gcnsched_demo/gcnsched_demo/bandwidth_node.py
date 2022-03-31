@@ -39,7 +39,7 @@ class BandwidthNode(Node):
         res: Bandwidth.Response = cli.call(req)
         dt = time.time() - start
         msg = Float64()
-        msg.data = dt / len(MSG.encode("utf-8"))
+        msg.data = len(MSG.encode("utf-8")) / dt
         pub.publish(msg)
 
     def ping_callback(self, 
