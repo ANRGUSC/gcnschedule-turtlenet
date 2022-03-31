@@ -14,13 +14,10 @@ windows:
      - export ALL_NODES=${ALL_NODES}
   panes:
     - shell_command:
-        - export NODE_NAME=executor_1
         - ros2 run gcnsched_demo executor --ros-args -r __ns:='/executor_1'
     - shell_command:
-        - export NODE_NAME=executor_2
         - ros2 run gcnsched_demo executor -r __ns:='/executor_2'
     - shell_command:
-        - export NODE_NAME=executor_3
         - ros2 run gcnsched_demo executor -r __ns:='/executor_3'
     - shell_command:
         - ros2 run gcnsched_demo scheduler -r __ns:='/scheduler'

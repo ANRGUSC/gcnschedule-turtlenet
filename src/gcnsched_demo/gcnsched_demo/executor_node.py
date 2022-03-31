@@ -12,16 +12,16 @@ from .task_graph import TaskGraph, deserialize, get_graph
 
 class ExecutorNode(Node):
     def __init__(self,
-                 name: str,
+                 # name: str,
                  graph: TaskGraph,
                  other_nodes: List[str]) -> None:
-        super().__init__(name)
+        super().__init__('executor_node')
 
         print("****")
         print(self.get_namespace())
         print("****")
 
-        self.name = name
+        self.name = self.get_namespace().split("/")[-1] #name
         self.graph = graph
         self.data: Dict[str, str] = {}
         self.execution_history: Dict[str, Set] = {}
@@ -36,6 +36,9 @@ class ExecutorNode(Node):
 
         self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
+            if other_node == self.name:
+                # print("skipping",other_node,"when making clients")
+                continue
             # self.executor_clients[other_node] = self.create_client(Executor, f'{other_node}/executor')
             cli = self.create_client(
                 Executor, f'/{other_node}/executor'
@@ -57,6 +60,7 @@ class ExecutorNode(Node):
 
     def proccessing_thread(self) -> None:
         while True:
+            # print("waiting for a message in the queue...")
             msg = self.queue.get()
             for next_node, out_msg in self.process_message(msg):
                 req = Executor.Request()
@@ -119,12 +123,13 @@ class ExecutorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    name = os.environ["NODE_NAME"]
+    # name = os.environ["NODE_NAME"]
     all_nodes = os.environ["ALL_NODES"].split(",")
     executor = ExecutorNode(
-        name=name,
+        # name=name,
         graph=get_graph(),
-        other_nodes=[node for node in all_nodes if node != name]
+        # other_nodes=[node for node in all_nodes if node != name]
+        other_nodes=all_nodes
     )
 
     while rclpy.ok():
