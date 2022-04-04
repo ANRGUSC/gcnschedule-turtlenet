@@ -21,8 +21,10 @@ class BandwidthNode(Node):
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
         # m_param = self.get_parameter('my_parameter').get_parameter_value().string_value
         # print(m_param)
-        self.get_logger().info('Hello %s!' % name)
+        # self.get_logger().info('Hello %s!' % name)
         self.get_logger().info(f"INIT {name}")
+        if not other_nodes:
+            self.get_logger.info("Error: could not find other nodes")
 
         cb_group = ReentrantCallbackGroup()
         self.ping_service = self.create_service(
@@ -60,8 +62,8 @@ class BandwidthNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     
-    name = "NODE1"
-    all_nodes = ["NODE2", "NODE3"]
+    name = "default-node"
+    all_nodes = []
 
     bandwidth_client_node = BandwidthNode(
         name=name,

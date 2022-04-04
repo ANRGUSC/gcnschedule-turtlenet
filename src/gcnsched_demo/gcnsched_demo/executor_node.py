@@ -16,6 +16,15 @@ class ExecutorNode(Node):
                  graph: TaskGraph,
                  other_nodes: List[str]) -> None:
         super().__init__(f"{name}_executor")
+        # Added code to get parameters from launch file
+        self.declare_parameter('name', 'default_node')
+        self.declare_parameter('other_nodes', [])
+        name = self.get_parameter('name').get_parameter_value().string_value
+        other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
+
+
+
+
         self.name = name
         self.graph = graph
         self.data: Dict[str, str] = {}
@@ -23,15 +32,15 @@ class ExecutorNode(Node):
         self.queue = Queue()
 
         self.srv = self.create_service(
-            Executor, f'{name}/executor', 
+            Executor, 'executor', 
             self.executor_callback
         )
 
         self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
-            self.executor_clients[other_node] = self.create_client(Executor, f'{other_node}/executor')
+            # self.executor_clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
             cli = self.create_client(
-                Executor, f'{other_node}/executor'
+                Executor, f'/{other_node}/executor'
             )
             self.executor_clients[other_node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
@@ -109,8 +118,8 @@ class ExecutorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    name = os.environ["NODE_NAME"]
-    all_nodes = os.environ["ALL_NODES"].split(",")
+    name = "default_node"
+    all_nodes = []
     executor = ExecutorNode(
         name=name,
         graph=get_graph(),

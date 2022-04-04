@@ -31,6 +31,13 @@ class Scheduler(Node):
                  graph: TaskGraph,
                  interval: int) -> None:
         super().__init__('scheduler')
+        #getting parameters from the launch file
+        self.declare_parameter('nodes', [])
+        self.declare_parameter('interval', 10)
+        nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
+        interval = self.get_parameter('interval').get_parameter_value().integer_value
+        print(nodes)
+
         self.get_logger().info("SCHEDULER INIT")
         self.graph = graph
         self.interval = interval
@@ -38,16 +45,16 @@ class Scheduler(Node):
         self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
             cli = self.create_client(
-                Executor, f'{node}/executor'
+                Executor, f'/{node}/executor'
             )
             self.executor_clients[node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
-                self.get_logger().warning(f'service {node}/executor not available, waiting again...')
+                self.get_logger().warning(f'service /{node}/executor not available, waiting again...')
 
         self.bandwidths: Dict[str, Dict[str, float]] = {}
         for src, dst in product(nodes, nodes):
             self.create_subscription(
-                Float64, f"{src}/{dst}/bandwidth", 
+                Float64, f"/{src}/{dst}/bandwidth", 
                 partial(self.bandwidth_callback, src, dst)
             )
         self.network_publisher: Publisher = self.create_publisher(Image, "network")
@@ -128,7 +135,7 @@ class Scheduler(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    all_nodes = os.environ["ALL_NODES"].split(",")
+    all_nodes = []
 
     gcn_sched = Scheduler(
         nodes=all_nodes,
