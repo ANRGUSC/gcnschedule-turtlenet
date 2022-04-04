@@ -8,24 +8,33 @@ import time
 from functools import partial
 from typing import List
 import os
+from rclpy.exceptions import ParameterNotDeclaredException
+from rcl_interfaces.msg import ParameterType
+
 
 class BandwidthNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) -> None:
-        super().__init__(f"{name}_bandwidth")
-
+        super().__init__("bandwidth") #f"{name}_bandwidth")
+        self.declare_parameter('name', 'default_node')
+        self.declare_parameter('other_nodes',[])
+        name = self.get_parameter('name').get_parameter_value().string_value
+        other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
+        # m_param = self.get_parameter('my_parameter').get_parameter_value().string_value
+        # print(m_param)
+        self.get_logger().info('Hello %s!' % name)
         self.get_logger().info(f"INIT {name}")
 
         cb_group = ReentrantCallbackGroup()
         self.ping_service = self.create_service(
-            Bandwidth, f'{name}/ping',
+            Bandwidth, 'ping',
             self.ping_callback,
             callback_group=cb_group
         )
 
         self.name = name
         for other_node in other_nodes:
-            cli = self.create_client(Bandwidth, f"{other_node}/ping", callback_group=cb_group)
-            pub = self.create_publisher(Float64, f"{name}/{other_node}/bandwidth", 10, callback_group=cb_group)
+            cli = self.create_client(Bandwidth, f"/{other_node}/ping", callback_group=cb_group)
+            pub = self.create_publisher(Float64, f"/{other_node}/bandwidth", 10, callback_group=cb_group)
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
             self.create_timer(interval, partial(self.ping_node, cli, pub), callback_group=cb_group)
@@ -50,9 +59,9 @@ class BandwidthNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-
-    name = os.environ["NODE_NAME"]
-    all_nodes = os.environ["ALL_NODES"].split(",")
+    
+    name = "NODE1"
+    all_nodes = ["NODE2", "NODE3"]
 
     bandwidth_client_node = BandwidthNode(
         name=name,

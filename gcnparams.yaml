@@ -1,0 +1,3 @@
+NODE1_bandwidth:
+  ros__parameters:
+    dummy_test: 'sup'
