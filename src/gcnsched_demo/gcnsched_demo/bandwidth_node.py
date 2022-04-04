@@ -36,7 +36,7 @@ class BandwidthNode(Node):
         self.name = name
         for other_node in other_nodes:
             cli = self.create_client(Bandwidth, f"/{other_node}/ping", callback_group=cb_group)
-            pub = self.create_publisher(Float64, f"/{other_node}/bandwidth", 10, callback_group=cb_group)
+            pub = self.create_publisher(Float64, f"{other_node}/bandwidth", 10, callback_group=cb_group)
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
             self.create_timer(interval, partial(self.ping_node, cli, pub), callback_group=cb_group)
