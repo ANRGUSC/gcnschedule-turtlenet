@@ -12,6 +12,7 @@ def generate_launch_description():
             node_executable='scheduler',
             # node_name=node_name,
             # node_namespace=node_name,
+            prefix=['stdbuf -o L'],
             output='screen',
             parameters=[
                 {'nodes': nodes }

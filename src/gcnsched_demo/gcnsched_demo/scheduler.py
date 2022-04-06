@@ -62,7 +62,6 @@ class Scheduler(Node):
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
         self.bandwidths[(src, dst)] = msg.data
-
         print("BANDWIDTHS:", pformat(self.bandwidths))
 
     # def draw_network(self) -> None:
@@ -116,6 +115,7 @@ class Scheduler(Node):
         return futures
 
     def execute_thread(self) -> None:
+        print('execute_thread')
         while True:
             start = time.time()
             futures = self.execute()

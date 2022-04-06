@@ -11,6 +11,7 @@ def generate_launch_description():
             node_executable='bandwidth',
             node_name=node_name,
             node_namespace=node_name,
+            prefix=['stdbuf -o L'],
             output='screen',
             parameters=[
                 {'name': node_name, 'other_nodes': other_nodes, }
@@ -21,6 +22,7 @@ def generate_launch_description():
             node_executable='executor',
             node_name=node_name,
             node_namespace=node_name,
+            prefix=['stdbuf -o L'],
             output='screen',
             parameters=[
                 {'name': node_name, 'other_nodes': other_nodes, }
