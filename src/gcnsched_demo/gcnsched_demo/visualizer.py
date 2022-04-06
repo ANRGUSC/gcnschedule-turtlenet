@@ -10,6 +10,13 @@ import rclpy
 from rclpy.node import Node, Client, Publisher
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
+        # std_msgs/Header header
+        # uint32 height
+        # uint32 width
+        # string encoding
+        # uint8 is_bigendian
+        # uint32 step
+        # uint8[] data
 
 from interfaces.srv import Executor
 import json
@@ -19,11 +26,11 @@ from itertools import product
 
 from .task_graph import TaskGraph, get_graph
 
-# from copy import deepcopy
-# import numpy as np
-# import networkx as nx
-# import matplotlib.pyplot as plt
-# from cv_bridge import CvBridge
+from copy import deepcopy
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
+from cv_bridge import CvBridge
 
 class Visualizer(Node):
     def __init__(self,
@@ -46,7 +53,7 @@ class Visualizer(Node):
                 partial(self.bandwidth_callback, src, dst)
             )
 
-        # self.network_publisher: Publisher = self.create_publisher(Image, "network")
+        self.network_publisher: Publisher = self.create_publisher(Image, "/network")
         self.create_timer(self.interval, self.draw_network)
 
         self.current_tasks: Dict[str, str] = {}
@@ -67,26 +74,32 @@ class Visualizer(Node):
     def draw_network(self) -> None:
         self.get_logger().info("Bandwidths:"+pformat(self.bandwidths))
         self.get_logger().info("Assignment:"+pformat(self.current_tasks))
-    #     graph = nx.Graph()
-    #     bandwidths = deepcopy(self.bandwidths)
-    #     graph.add_weighted_edges_from(
-    #         [(src, dst, bw) for (src, dst), bw in bandwidths.items()]
-    #     )
 
-    #     fig, ax = plt.subplots()
-    #     nx.draw_planar(graph, ax=ax)
-    #     fig.canvas.draw()
+        graph = nx.Graph()
+        # FOR DEBUGGING
+        # bandwidths = {("A","B"):10,("A","C"):20}
+        bandwidths = deepcopy(self.bandwidths)
+        graph.add_weighted_edges_from(
+            [(src, dst, bw) for (src, dst), bw in bandwidths.items()]
+        )
 
-    #     # convert canvas to image
-    #     img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    #     img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        fig, ax = plt.subplots()
+        nx.draw_planar(graph, ax=ax)
+        fig.canvas.draw()
 
-    #     bridge = CvBridge()
-    #     img_msg = Image()
-    #     img_msg.image = bridge.cv2_to_imgmsg(img)
+        # convert canvas to image
+        img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # self.get_logger().info(str(img))
 
-    #     self.network_publisher.publish(img_msg)
-    #     plt.close(fig)
+        bridge = CvBridge()
+        img_msg = Image()
+        # img_msg.header.stamp = self.get_clock().now()
+        img_msg = bridge.cv2_to_imgmsg(img, encoding="rgb8")
+
+        self.network_publisher.publish(img_msg)
+        self.get_logger().info("publishing network image for visualization")
+        plt.close(fig)
 
 
 def main(args=None):
