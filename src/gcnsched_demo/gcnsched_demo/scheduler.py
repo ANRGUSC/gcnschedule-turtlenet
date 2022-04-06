@@ -26,8 +26,8 @@ from .task_graph import TaskGraph, get_graph
 # from cv_bridge import CvBridge
 
 class Scheduler(Node):
-    def __init__(self, 
-                 nodes: List[str], 
+    def __init__(self,
+                 nodes: List[str],
                  graph: TaskGraph,
                  interval: int) -> None:
         super().__init__('scheduler')
@@ -54,7 +54,7 @@ class Scheduler(Node):
         self.bandwidths: Dict[str, Dict[str, float]] = {}
         for src, dst in product(nodes, nodes):
             self.create_subscription(
-                Float64, f"/{src}/{dst}/bandwidth", 
+                Float64, f"/{src}/{dst}/bandwidth",
                 partial(self.bandwidth_callback, src, dst)
             )
         self.network_publisher: Publisher = self.create_publisher(Image, "network")
@@ -79,11 +79,11 @@ class Scheduler(Node):
     #     # convert canvas to image
     #     img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
     #     img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-        
+
     #     bridge = CvBridge()
     #     img_msg = Image()
     #     img_msg.image = bridge.cv2_to_imgmsg(img)
-        
+
     #     self.network_publisher.publish(img_msg)
     #     plt.close(fig)
 
@@ -93,7 +93,7 @@ class Scheduler(Node):
             task: random.choice(nodes)
             for task in self.graph.task_names
         }
-        
+
     def execute(self) -> Any:
         self.get_logger().info(f"\nSTARTING NEW EXECUTION")
         schedule = self.get_schedule()
@@ -112,7 +112,7 @@ class Scheduler(Node):
             req.input = message
             self.get_logger().info(f"SENDING INITIAL TASK {task} TO {node}")
             futures.append((node, task, self.executor_clients[node].call_async(req)))
-            
+
         return futures
 
     def execute_thread(self) -> None:
@@ -144,7 +144,7 @@ def main(args=None):
     )
     thread = Thread(target=gcn_sched.execute_thread)
     thread.start()
-    
+
     try:
         rclpy.spin(gcn_sched)
     finally:

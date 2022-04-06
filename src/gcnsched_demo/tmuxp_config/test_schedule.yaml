@@ -1,0 +1,29 @@
+session_name: test_schedule
+environment:
+  ALL_NODES: executor_1,executor_2,executor_3
+
+options:
+  default-command: /bin/bash
+
+windows:
+- window_name: test_schedule
+  focus: true
+  layout: tiled
+  shell_command_before:
+     # - source /opt/ros/dashing/setup.bash
+     - . install/setup.bash
+     - export ALL_NODES=${ALL_NODES}
+     - echo $ALL_NODES
+     - echo $ROS_DISTRO
+  panes:
+    - shell_command:
+        - export NODE_NAME=executor_1
+        - ros2 run gcnsched_demo executor
+    - shell_command:
+        - export NODE_NAME=executor_2
+        - ros2 run gcnsched_demo executor
+    - shell_command:
+        - export NODE_NAME=executor_3
+        - ros2 run gcnsched_demo executor
+    - shell_command:
+        - ros2 run gcnsched_demo scheduler

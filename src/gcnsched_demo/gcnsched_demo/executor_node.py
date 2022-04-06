@@ -10,9 +10,11 @@ from threading import Thread
 
 from .task_graph import TaskGraph, deserialize, get_graph
 
+from std_msgs.msg import String
+
 class ExecutorNode(Node):
-    def __init__(self, 
-                 name: str, 
+    def __init__(self,
+                 name: str,
                  graph: TaskGraph,
                  other_nodes: List[str]) -> None:
         super().__init__(f"{name}_executor")
@@ -32,7 +34,7 @@ class ExecutorNode(Node):
         self.queue = Queue()
 
         self.srv = self.create_service(
-            Executor, 'executor', 
+            Executor, 'executor',
             self.executor_callback
         )
 
@@ -45,6 +47,11 @@ class ExecutorNode(Node):
             self.executor_clients[other_node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
+
+        self.publish_current_task = False
+        if self.publish_current_task:
+            self.current_task_publisher: Publisher = self.create_publisher(String, "current_task")
+            self.current_task_publisher.publish("")
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
@@ -79,7 +86,7 @@ class ExecutorNode(Node):
         schedule: Dict[str, str] = msg["schedule"]
         task_graph: Dict[str, List[str]] = msg["task_graph"]
         tasks = [
-            task_name for task_name, node_name in schedule.items() 
+            task_name for task_name, node_name in schedule.items()
             if (
                 node_name == self.name and # task should be executed on this node
                 task_name not in self.execution_history[execution_id] and # task has not been executed yet
@@ -89,9 +96,13 @@ class ExecutorNode(Node):
 
         for task in tasks:
             self.get_logger().info(f"EXECUTING {task} ON {self.name}")
+            if self.publish_current_task:
+                self.current_task_publisher.publish(task)
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
+            if self.publish_current_task:
+                self.current_task_publisher.publish("")
             next_nodes = {
                 schedule[other_task] for other_task, deps in task_graph.items()
                 if task in deps
@@ -109,7 +120,7 @@ class ExecutorNode(Node):
                     indent=2
                 )
                 if self.name == next_node:
-                    yield from self.process_message(msg) 
+                    yield from self.process_message(msg)
                 else:
                     self.get_logger().info(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
