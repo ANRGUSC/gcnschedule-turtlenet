@@ -17,5 +17,16 @@ def generate_launch_description():
             parameters=[
                 {'nodes': nodes }
             ]
+        ),
+        Node(
+            package='gcnsched_demo',
+            node_executable='visualizer',
+            # node_name=node_name,
+            # node_namespace=node_name,
+            prefix=['stdbuf -o L'],
+            output='screen',
+            parameters=[
+                {'nodes': nodes }
+            ]
         )
     ])

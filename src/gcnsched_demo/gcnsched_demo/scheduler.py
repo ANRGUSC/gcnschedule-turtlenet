@@ -19,12 +19,6 @@ from itertools import product
 
 from .task_graph import TaskGraph, get_graph
 
-# from copy import deepcopy
-# import numpy as np
-# import networkx as nx
-# import matplotlib.pyplot as plt
-# from cv_bridge import CvBridge
-
 class Scheduler(Node):
     def __init__(self,
                  nodes: List[str],
@@ -57,34 +51,10 @@ class Scheduler(Node):
                 Float64, f"/{src}/{dst}/bandwidth",
                 partial(self.bandwidth_callback, src, dst)
             )
-        self.network_publisher: Publisher = self.create_publisher(Image, "network")
-        # self.create_timer(10, self.draw_network)
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
         self.bandwidths[(src, dst)] = msg.data
-        print("BANDWIDTHS:", pformat(self.bandwidths))
-
-    # def draw_network(self) -> None:
-    #     graph = nx.Graph()
-    #     bandwidths = deepcopy(self.bandwidths)
-    #     graph.add_weighted_edges_from(
-    #         [(src, dst, bw) for (src, dst), bw in bandwidths.items()]
-    #     )
-
-    #     fig, ax = plt.subplots()
-    #     nx.draw_planar(graph, ax=ax)
-    #     fig.canvas.draw()
-
-    #     # convert canvas to image
-    #     img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    #     img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-
-    #     bridge = CvBridge()
-    #     img_msg = Image()
-    #     img_msg.image = bridge.cv2_to_imgmsg(img)
-
-    #     self.network_publisher.publish(img_msg)
-    #     plt.close(fig)
+        # print("BANDWIDTHS:", pformat(self.bandwidths))
 
     def get_schedule(self) -> Dict[str, str]:
         nodes = list(self.executor_clients.keys())

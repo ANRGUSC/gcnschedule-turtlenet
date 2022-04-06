@@ -48,10 +48,12 @@ class ExecutorNode(Node):
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
 
-        self.publish_current_task = False
+        self.publish_current_task = True
         if self.publish_current_task:
             self.current_task_publisher: Publisher = self.create_publisher(String, "current_task")
-            self.current_task_publisher.publish("")
+            s = String()
+            s.data = ""
+            self.current_task_publisher.publish(s)
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
@@ -97,12 +99,17 @@ class ExecutorNode(Node):
         for task in tasks:
             self.get_logger().info(f"EXECUTING {task} ON {self.name}")
             if self.publish_current_task:
-                self.current_task_publisher.publish(task)
+                self.get_logger().info("publishing")
+                s = String()
+                s.data = task
+                self.current_task_publisher.publish(s)
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
-            if self.publish_current_task:
-                self.current_task_publisher.publish("")
+            if self.publish_current_task and False: # don't reset for now
+                s = String()
+                s.data = ""
+                self.current_task_publisher.publish(s)
             next_nodes = {
                 schedule[other_task] for other_task, deps in task_graph.items()
                 if task in deps

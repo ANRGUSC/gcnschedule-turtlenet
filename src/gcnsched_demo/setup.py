@@ -26,6 +26,7 @@ setup(
             'executor = gcnsched_demo.executor_node:main',
             'scheduler = gcnsched_demo.scheduler:main',
             'bandwidth = gcnsched_demo.bandwidth_node:main',
+            'visualizer = gcnsched_demo.visualizer:main'
         ],
     },
 )
