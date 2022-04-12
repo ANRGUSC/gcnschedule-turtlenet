@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'numpy'], #, 'matplotlib', 'networkx'],
+    install_requires=['setuptools', 'numpy', 'torch'], #, 'matplotlib', 'networkx'],
     zip_safe=True,
     maintainer='lilly',
     maintainer_email='lilliamc@usc.edu',

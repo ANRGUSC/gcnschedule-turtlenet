@@ -98,7 +98,7 @@ services:
     - /workspace/gcnschedule-turtlenet/.workspaces/rosboard:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
   scheduler:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
+    command: bash -c "pip3 install -e /edGNN && colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
       scheduler"
     environment:
       ALL_NODES: node_1,node_2,node_3,node_4
@@ -107,4 +107,5 @@ services:
     volumes:
     - /workspace/gcnschedule-turtlenet/.workspaces/scheduler:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
+    - ./edGNN:/edGNN
 version: '3'

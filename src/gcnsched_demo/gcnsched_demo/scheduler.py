@@ -1,9 +1,13 @@
+import enum
 from functools import partial
 from pprint import pformat
 import random
+from re import I
 from threading import Thread
 import time
 from typing import Dict, List, Any
+
+import torch
 
 
 import rclpy
@@ -17,6 +21,7 @@ from uuid import uuid4
 import os
 from itertools import product
 
+from gcnsched.ready_to_use import find_schedule
 from .task_graph import TaskGraph, get_graph
 
 # from copy import deepcopy
@@ -34,6 +39,7 @@ class Scheduler(Node):
         self.get_logger().info("SCHEDULER INIT")
         self.graph = graph
         self.interval = interval
+        self.all_nodes = nodes
 
         self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
@@ -81,11 +87,51 @@ class Scheduler(Node):
     #     plt.close(fig)
 
     def get_schedule(self) -> Dict[str, str]:
-        nodes = list(self.executor_clients.keys())
-        return {
-            task: random.choice(nodes)
-            for task in self.graph.task_names
+        # nodes = list(self.executor_clients.keys())
+        # return {
+        #     task: random.choice(nodes)
+        #     for task in self.graph.task_names
+        # }
+
+        num_machines = len(self.all_nodes)
+        num_tasks = len(self.graph.task_names)
+
+        task_graph_ids = {
+            task: i
+            for i, task in enumerate(self.graph.task_names)
         }
+
+        task_graph = {
+            task_graph_ids[task.name]: [
+                task_graph_ids[dep.name]
+                for dep in deps
+            ]
+            for task, deps in self.graph.task_deps.items()
+        }
+
+        comm = torch.Tensor([
+            [
+                0 if i == j else 1 / self.bandwidths.get((self.all_nodes[i], self.all_nodes[j]), 1e9)
+                for j in range(num_machines)
+            ]
+            for i in range(num_machines)
+        ])
+
+        schedule = find_schedule(
+            num_of_all_machines=num_machines,
+            num_node=num_tasks,
+            input_given_speed=torch.ones(1, num_machines),
+            input_given_comm=comm,
+            input_given_comp=torch.ones(1,num_tasks),
+            input_given_task_graph=task_graph
+        )
+
+        reverse_task_graph_ids = {v: k for k, v in task_graph_ids.items()}
+        return {
+            reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
+            for task_i, node_i in enumerate(schedule)
+        }
+        
         
     def execute(self) -> Any:
         self.get_logger().info(f"\nSTARTING NEW EXECUTION")
