@@ -11,8 +11,8 @@ log/*
 src/build/*
 src/install/*
 src/log/*
-# go_adhoc_turtle.sh
-# pc_tools/pc_adhoc.sh
+go_adhoc_turtle.sh
+pc_tools/pc_adhoc.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
