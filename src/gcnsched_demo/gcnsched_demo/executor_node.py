@@ -106,7 +106,7 @@ class ExecutorNode(Node):
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
-            if self.publish_current_task and False: # don't reset for now
+            if self.publish_current_task: # don't reset for now
                 s = String()
                 s.data = ""
                 self.current_task_publisher.publish(s)

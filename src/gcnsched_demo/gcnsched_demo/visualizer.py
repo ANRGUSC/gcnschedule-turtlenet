@@ -77,14 +77,31 @@ class Visualizer(Node):
 
         graph = nx.Graph()
         # FOR DEBUGGING
-        # bandwidths = {("A","B"):10,("A","C"):20}
-        bandwidths = deepcopy(self.bandwidths)
+        bandwidths = {("A","B"):10,("A","C"):20,("B","C"):30}
+        # bandwidths = deepcopy(self.bandwidths)
         graph.add_weighted_edges_from(
             [(src, dst, bw) for (src, dst), bw in bandwidths.items()]
         )
 
-        fig, ax = plt.subplots()
-        nx.draw_planar(graph, ax=ax)
+        fig, ax = plt.subplots(figsize=(10,10))
+        # nx.draw_planar(graph, ax=ax, with_labels=True)
+
+        pos = nx.planar_layout(graph)
+
+        # nx.draw(graph, pos, edge_color='black',width=10,linewidths=10,node_size=1000,
+            # node_color='pink',alpha=0.9,labels={node: node for node in graph.nodes},font_size=100)
+        # nx.draw_networkx_edge_labels(graph,pos,edge_labels=bandwidths,font_color='red')
+
+        G = graph
+        d = dict(G.degree)
+        nx.draw(G, pos=pos,node_color='orange',
+                with_labels=False,
+                node_size=[d[k]*600 for k in d])
+        for node, (x, y) in pos.items():
+            plt.text(x, y, node, fontsize=d[node]*10, ha='center', va='center')
+
+        nx.draw_networkx_edge_labels(graph,pos,edge_labels=bandwidths,font_color='black',font_size=20)
+
         fig.canvas.draw()
 
         # convert canvas to image
@@ -109,7 +126,7 @@ def main(args=None):
 
     gcn_sched = Visualizer(
         nodes=all_nodes,
-        interval=2
+        interval=1
     )
 
     try:

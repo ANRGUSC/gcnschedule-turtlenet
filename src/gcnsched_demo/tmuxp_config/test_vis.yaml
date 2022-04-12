@@ -14,3 +14,5 @@ windows:
   panes:
     - shell_command:
         - ros2 run gcnsched_demo visualizer
+    - shell_command:
+        - ros2 run rqt_image_view rqt_image_view
