@@ -1,4 +1,6 @@
 from setuptools import setup
+import os
+from glob import glob
 
 package_name = 'gcnsched_demo'
 
@@ -10,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name), glob('launch/*_launch.py')),
     ],
     install_requires=['setuptools', 'numpy', 'torch'], #, 'matplotlib', 'networkx'],
     zip_safe=True,
@@ -23,6 +26,7 @@ setup(
             'executor = gcnsched_demo.executor_node:main',
             'scheduler = gcnsched_demo.scheduler:main',
             'bandwidth = gcnsched_demo.bandwidth_node:main',
+            'visualizer = gcnsched_demo.visualizer:main'
         ],
     },
 )

@@ -1,0 +1,16 @@
+session_name: test_schedule
+# environment:
+
+options:
+  default-command: /bin/bash
+
+windows:
+- window_name: test_schedule
+  focus: true
+  layout: tiled
+  shell_command_before:
+     # - source /opt/ros/dashing/setup.bash
+     - . install/setup.bash
+  panes:
+    - shell_command:
+        - ros2 run gcnsched_demo visualizer
