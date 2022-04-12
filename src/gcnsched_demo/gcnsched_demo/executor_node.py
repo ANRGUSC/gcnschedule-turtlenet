@@ -10,12 +10,23 @@ from threading import Thread
 
 from .task_graph import TaskGraph, deserialize, get_graph
 
+from std_msgs.msg import String
+
 class ExecutorNode(Node):
-    def __init__(self, 
-                 name: str, 
+    def __init__(self,
+                 name: str,
                  graph: TaskGraph,
                  other_nodes: List[str]) -> None:
         super().__init__(f"{name}_executor")
+        # Added code to get parameters from launch file
+        self.declare_parameter('name', 'default_node')
+        self.declare_parameter('other_nodes', [])
+        name = self.get_parameter('name').get_parameter_value().string_value
+        other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
+
+
+
+
         self.name = name
         self.graph = graph
         self.data: Dict[str, str] = {}
@@ -23,19 +34,26 @@ class ExecutorNode(Node):
         self.queue = Queue()
 
         self.srv = self.create_service(
-            Executor, f'{name}/executor', 
+            Executor, 'executor',
             self.executor_callback
         )
 
         self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
-            self.executor_clients[other_node] = self.create_client(Executor, f'{other_node}/executor')
+            # self.executor_clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
             cli = self.create_client(
-                Executor, f'{other_node}/executor'
+                Executor, f'/{other_node}/executor'
             )
             self.executor_clients[other_node] = cli
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
+
+        self.publish_current_task = True
+        if self.publish_current_task:
+            self.current_task_publisher: Publisher = self.create_publisher(String, "current_task")
+            s = String()
+            s.data = ""
+            self.current_task_publisher.publish(s)
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
@@ -70,7 +88,7 @@ class ExecutorNode(Node):
         schedule: Dict[str, str] = msg["schedule"]
         task_graph: Dict[str, List[str]] = msg["task_graph"]
         tasks = [
-            task_name for task_name, node_name in schedule.items() 
+            task_name for task_name, node_name in schedule.items()
             if (
                 node_name == self.name and # task should be executed on this node
                 task_name not in self.execution_history[execution_id] and # task has not been executed yet
@@ -80,9 +98,18 @@ class ExecutorNode(Node):
 
         for task in tasks:
             self.get_logger().info(f"EXECUTING {task} ON {self.name}")
+            if self.publish_current_task:
+                self.get_logger().info("publishing")
+                s = String()
+                s.data = task
+                self.current_task_publisher.publish(s)
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
+            if self.publish_current_task and False: # don't reset for now
+                s = String()
+                s.data = ""
+                self.current_task_publisher.publish(s)
             next_nodes = {
                 schedule[other_task] for other_task, deps in task_graph.items()
                 if task in deps
@@ -100,7 +127,7 @@ class ExecutorNode(Node):
                     indent=2
                 )
                 if self.name == next_node:
-                    yield from self.process_message(msg) 
+                    yield from self.process_message(msg)
                 else:
                     self.get_logger().info(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
@@ -109,8 +136,8 @@ class ExecutorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    name = os.environ["NODE_NAME"]
-    all_nodes = os.environ["ALL_NODES"].split(",")
+    name = "default_node"
+    all_nodes = []
     executor = ExecutorNode(
         name=name,
         graph=get_graph(),
