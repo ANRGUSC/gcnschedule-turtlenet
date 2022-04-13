@@ -42,12 +42,14 @@ class BandwidthNode(Node):
             self.create_timer(interval, partial(self.ping_node, cli, pub), callback_group=cb_group)
 
     def ping_node(self, cli: Client, pub: Publisher) -> None:
-        MSG = "hello"
-        
+        self.get_logger().info("Inside PING NODE")
+        MSG = "hello"        
         req = Bandwidth.Request()
         req.a = MSG
         start = time.time()
+        self.get_logger().info("STUCK")
         res: Bandwidth.Response = cli.call(req)
+        self.get_logger().info("UNSTUCK")
         dt = time.time() - start
         msg = Float64()
         msg.data = len(MSG.encode("utf-8")) / dt
