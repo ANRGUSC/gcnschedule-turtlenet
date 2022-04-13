@@ -11,14 +11,12 @@ import torch
 
 
 import rclpy
-from rclpy.node import Node, Client, Publisher
+from rclpy.node import Node, Client
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image
 
 from interfaces.srv import Executor
 import json
 from uuid import uuid4
-import os
 from itertools import product
 
 from gcnsched.ready_to_use import find_schedule
@@ -35,7 +33,6 @@ class Scheduler(Node):
         self.declare_parameter('interval', 10)
         nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
         interval = self.get_parameter('interval').get_parameter_value().integer_value
-        print(nodes)
 
         self.get_logger().info("SCHEDULER INIT")
         self.graph = graph
@@ -60,15 +57,8 @@ class Scheduler(Node):
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
         self.bandwidths[(src, dst)] = msg.data
-        # print("BANDWIDTHS:", pformat(self.bandwidths))
 
     def get_schedule(self) -> Dict[str, str]:
-        # nodes = list(self.executor_clients.keys())
-        # return {
-        #     task: random.choice(nodes)
-        #     for task in self.graph.task_names
-        # }
-
         num_machines = len(self.all_nodes)
         num_tasks = len(self.graph.task_names)
 
@@ -76,6 +66,8 @@ class Scheduler(Node):
             task: i
             for i, task in enumerate(self.graph.task_names)
         }
+        
+        reverse_task_graph_ids = {v: k for k, v in task_graph_ids.items()}
 
         task_graph = {
             task_graph_ids[task.name]: [
@@ -93,16 +85,29 @@ class Scheduler(Node):
             for i in range(num_machines)
         ])
 
+        comp = torch.Tensor([
+            [
+                self.graph.task_names[reverse_task_graph_ids[i]].cost
+                for i in range(num_tasks)
+            ]
+        ])
+
+        task_graph_forward: Dict[int, List[int]] = {}
+        for node_name, node_deps in task_graph.items():
+            for node_dep in node_deps:
+                task_graph_forward.setdefault(node_dep, [])
+                if node_name not in task_graph_forward[node_dep]:
+                    task_graph_forward[node_dep].append(node_name)
+
         schedule = find_schedule(
             num_of_all_machines=num_machines,
             num_node=num_tasks,
             input_given_speed=torch.ones(1, num_machines),
             input_given_comm=comm,
-            input_given_comp=torch.ones(1,num_tasks),
-            input_given_task_graph=task_graph
+            input_given_comp=comp,
+            input_given_task_graph=task_graph_forward
         )
 
-        reverse_task_graph_ids = {v: k for k, v in task_graph_ids.items()}
         return {
             reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
             for task_i, node_i in enumerate(schedule)
@@ -130,7 +135,6 @@ class Scheduler(Node):
         return futures
 
     def execute_thread(self) -> None:
-        print('execute_thread')
         while True:
             start = time.time()
             futures = self.execute()
