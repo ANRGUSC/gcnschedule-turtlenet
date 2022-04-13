@@ -14,7 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name), glob('launch/*_launch.py')),
     ],
-    install_requires=['setuptools', 'numpy'], #, 'matplotlib', 'networkx'],
+    install_requires=['setuptools'], #, 'numpy', 'torch'], #, 'matplotlib', 'networkx'],
     zip_safe=True,
     maintainer='lilly',
     maintainer_email='lilliamc@usc.edu',

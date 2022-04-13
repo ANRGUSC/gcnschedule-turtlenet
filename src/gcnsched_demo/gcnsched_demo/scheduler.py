@@ -1,14 +1,18 @@
+import enum
 from functools import partial
 from pprint import pformat
 import random
+from re import I
 from threading import Thread
 import time
 from typing import Dict, List, Any
 
+import torch
+
 
 import rclpy
 from rclpy.node import Node, Client, Publisher
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
 
 from interfaces.srv import Executor
@@ -17,6 +21,7 @@ from uuid import uuid4
 import os
 from itertools import product
 
+from gcnsched.ready_to_use import find_schedule
 from .task_graph import TaskGraph, get_graph
 
 class Scheduler(Node):
@@ -35,6 +40,7 @@ class Scheduler(Node):
         self.get_logger().info("SCHEDULER INIT")
         self.graph = graph
         self.interval = interval
+        self.all_nodes = nodes
 
         self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
@@ -52,15 +58,59 @@ class Scheduler(Node):
                 partial(self.bandwidth_callback, src, dst)
             )
 
+        self.create_subscription(String, "/output", self.output_callback)
+
+    def output_callback(self, msg: String) -> None:
+        self.get_logger().info(f"\nFinished!! {time.time() - self.start}")
+
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
         self.bandwidths[(src, dst)] = msg.data
         # print("BANDWIDTHS:", pformat(self.bandwidths))
 
     def get_schedule(self) -> Dict[str, str]:
-        nodes = list(self.executor_clients.keys())
+        # nodes = list(self.executor_clients.keys())
+        # return {
+        #     task: random.choice(nodes)
+        #     for task in self.graph.task_names
+        # }
+
+        num_machines = len(self.all_nodes)
+        num_tasks = len(self.graph.task_names)
+
+        task_graph_ids = {
+            task: i
+            for i, task in enumerate(self.graph.task_names)
+        }
+
+        task_graph = {
+            task_graph_ids[task.name]: [
+                task_graph_ids[dep.name]
+                for dep in deps
+            ]
+            for task, deps in self.graph.task_deps.items()
+        }
+
+        comm = torch.Tensor([
+            [
+                0 if i == j else 1 / self.bandwidths.get((self.all_nodes[i], self.all_nodes[j]), 1e9)
+                for j in range(num_machines)
+            ]
+            for i in range(num_machines)
+        ])
+
+        schedule = find_schedule(
+            num_of_all_machines=num_machines,
+            num_node=num_tasks,
+            input_given_speed=torch.ones(1, num_machines),
+            input_given_comm=comm,
+            input_given_comp=torch.ones(1,num_tasks),
+            input_given_task_graph=task_graph
+        )
+
+        reverse_task_graph_ids = {v: k for k, v in task_graph_ids.items()}
         return {
-            task: random.choice(nodes)
-            for task in self.graph.task_names
+            reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
+            for task_i, node_i in enumerate(schedule)
         }
 
     def execute(self) -> Any:
@@ -87,7 +137,7 @@ class Scheduler(Node):
     def execute_thread(self) -> None:
         print('execute_thread')
         while True:
-            start = time.time()
+            self.start = time.time()
             futures = self.execute()
             finished_futures = set()
             while len(finished_futures) < len(futures):
@@ -100,7 +150,7 @@ class Scheduler(Node):
                         else:
                             self.get_logger().info(f'RES FROM {node}: {response.output}')
                             finished_futures.add((node, task))
-            time.sleep(max(0, self.interval - (time.time() - start)))
+            time.sleep(max(0, self.interval - (time.time() - self.start)))
 
 def main(args=None):
     rclpy.init(args=args)

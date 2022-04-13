@@ -1,91 +1,35 @@
 services:
-  bandwidth_1:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      bandwidth"
+  robot_1:
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node1_launch.py"
     environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_1
       PYTHONUNBUFFERED: 1
     image: smile_ros
     volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/bandwidth_1:/workspace
+    - /workspace/gcnschedule-turtlenet/.workspaces/robot_1:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  bandwidth_2:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      bandwidth"
+  robot_2:
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node2_launch.py"
     environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_2
       PYTHONUNBUFFERED: 1
     image: smile_ros
     volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/bandwidth_2:/workspace
+    - /workspace/gcnschedule-turtlenet/.workspaces/robot_2:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  bandwidth_3:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      bandwidth"
+  robot_3:
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node3_launch.py"
     environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_3
       PYTHONUNBUFFERED: 1
     image: smile_ros
     volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/bandwidth_3:/workspace
+    - /workspace/gcnschedule-turtlenet/.workspaces/robot_3:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  bandwidth_4:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      bandwidth"
+  robot_4:
+    command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node4_launch.py"
     environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_4
       PYTHONUNBUFFERED: 1
     image: smile_ros
     volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/bandwidth_4:/workspace
-    - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  executor_1:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      executor"
-    environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_1
-      PYTHONUNBUFFERED: 1
-    image: smile_ros
-    volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/executor_1:/workspace
-    - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  executor_2:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      executor"
-    environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_2
-      PYTHONUNBUFFERED: 1
-    image: smile_ros
-    volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/executor_2:/workspace
-    - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  executor_3:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      executor"
-    environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_3
-      PYTHONUNBUFFERED: 1
-    image: smile_ros
-    volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/executor_3:/workspace
-    - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  executor_4:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      executor"
-    environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
-      NODE_NAME: node_4
-      PYTHONUNBUFFERED: 1
-    image: smile_ros
-    volumes:
-    - /workspace/gcnschedule-turtlenet/.workspaces/executor_4:/workspace
+    - /workspace/gcnschedule-turtlenet/.workspaces/robot_4:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
   rosboard:
     command: bash -c "colcon build && . ./install/setup.sh && /rosboard/run"
@@ -98,13 +42,12 @@ services:
     - /workspace/gcnschedule-turtlenet/.workspaces/rosboard:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
   scheduler:
-    command: bash -c "colcon build && . ./install/setup.sh && ros2 run gcnsched_demo
-      scheduler"
+    command: bash -c "pip3 install -e /edGNN && colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo sched_launch.py"
     environment:
-      ALL_NODES: node_1,node_2,node_3,node_4
       PYTHONUNBUFFERED: 1
     image: smile_ros
     volumes:
     - /workspace/gcnschedule-turtlenet/.workspaces/scheduler:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
+    - ./edGNN:/edGNN
 version: '3'
