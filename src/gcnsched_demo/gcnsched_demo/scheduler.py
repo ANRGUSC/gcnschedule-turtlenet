@@ -12,7 +12,7 @@ import torch
 
 import rclpy
 from rclpy.node import Node, Client, Publisher
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
 
 from interfaces.srv import Executor
@@ -57,6 +57,11 @@ class Scheduler(Node):
                 Float64, f"/{src}/{dst}/bandwidth",
                 partial(self.bandwidth_callback, src, dst)
             )
+
+        self.create_subscription(String, "/output", self.output_callback)
+
+    def output_callback(self, msg: String) -> None:
+        self.get_logger().info(f"\nFinished!! {time.time() - self.start}")
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
         self.bandwidths[(src, dst)] = msg.data
@@ -132,7 +137,7 @@ class Scheduler(Node):
     def execute_thread(self) -> None:
         print('execute_thread')
         while True:
-            start = time.time()
+            self.start = time.time()
             futures = self.execute()
             finished_futures = set()
             while len(finished_futures) < len(futures):
@@ -145,7 +150,7 @@ class Scheduler(Node):
                         else:
                             self.get_logger().info(f'RES FROM {node}: {response.output}')
                             finished_futures.add((node, task))
-            time.sleep(max(0, self.interval - (time.time() - start)))
+            time.sleep(max(0, self.interval - (time.time() - self.start)))
 
 def main(args=None):
     rclpy.init(args=args)
