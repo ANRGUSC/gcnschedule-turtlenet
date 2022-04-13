@@ -1,5 +1,5 @@
 #!/bin/bash
-#TO RUN ./colcom.sh (args)    || args = {run}
+#TO RUN ./colcon.sh (args)    || args = {run}
 #Change the variables according the robot or packages
 declare -a PACKAGENAMES=("gcnsched_demo" "interfaces")
 LAUNCH_FILE="sched_launch.py"

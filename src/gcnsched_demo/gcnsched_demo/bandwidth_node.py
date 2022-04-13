@@ -51,6 +51,7 @@ class BandwidthNode(Node):
         dt = time.time() - start
         msg = Float64()
         msg.data = len(MSG.encode("utf-8")) / dt
+        self.get_logger().info("publishing")
         pub.publish(msg)
 
     def ping_callback(self, 
