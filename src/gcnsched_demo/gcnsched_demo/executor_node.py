@@ -110,7 +110,7 @@ class ExecutorNode(Node):
             self.execution_history[execution_id].add(task)
             if self.publish_current_task: # don't reset for now
                 s = String()
-                s.data = "done with"+current_task
+                s.data = "done with"+task
                 self.current_task_publisher.publish(s)
             next_nodes = {
                 schedule[other_task] for other_task, deps in task_graph.items()
