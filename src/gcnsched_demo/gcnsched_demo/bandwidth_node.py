@@ -74,7 +74,7 @@ def main(args=None):
         interval=5
     )
     
-    executor = MultiThreadedExecutor()
+    executor = MultiThreadedExecutor(num_threads=1000)
     executor.add_node(bandwidth_client_node)
 
     executor.spin()
