@@ -8,4 +8,5 @@ RUN pip3 install git+https://github.com/ANRGUSC/edGNN.git@feature/gcnsched
 RUN pip3 install --upgrade pip && pip3 install opencv-python
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 RUN apt-get install -y ros-dashing-cv-bridge
+RUN pip3 install wfcommons
 WORKDIR /workspace 
