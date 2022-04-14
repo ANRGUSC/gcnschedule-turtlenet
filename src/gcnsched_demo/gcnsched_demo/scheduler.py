@@ -176,7 +176,6 @@ class Scheduler(Node):
 
     def draw_task_graph(self) -> None:
         self.get_logger().info("Drawing taskgraph")
-        self.current_tasks = {"node1":"min","node2":"min","node3":"min","node4":"min"}
 
         graph = nx.DiGraph()
 
@@ -207,10 +206,9 @@ class Scheduler(Node):
         nx.draw(
             graph, pos, edge_color='black', width=1, linewidths=1,
             node_size=1500, node_color=node_color, alpha=0.9,
-            with_labels = True, font_weight = 'bold',cmap=cmap
+            with_labels = True, font_weight = 'bold',cmap=cmap,vmin=0,vmax=len(self.all_nodes)+1
         )
-        # color_lines = [mpatches.Patch(color=cmap(types[t]), label=t) for t in types.keys()]
-        color_lines = [mpatches.Patch(color=cmap)]
+        color_lines = [mpatches.Patch(color=cmap(types[t]), label=t) for t in types.keys()]
         legend = plt.legend(handles=color_lines, loc='best')
         # nx.draw_networkx_edge_labels(
         #     graph, pos,
