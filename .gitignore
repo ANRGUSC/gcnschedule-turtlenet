@@ -13,6 +13,7 @@ src/install/*
 src/log/*
 go_adhoc_turtle.sh
 pc_tools/pc_adhoc.sh
+colcon.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

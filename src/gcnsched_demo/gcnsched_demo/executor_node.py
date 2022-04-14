@@ -52,8 +52,10 @@ class ExecutorNode(Node):
         if self.publish_current_task:
             self.current_task_publisher: Publisher = self.create_publisher(String, "current_task")
             s = String()
-            s.data = ""
+            s.data = "done"
             self.current_task_publisher.publish(s)
+
+        self.output_publish: Publisher = self.create_publisher(String, "/output")
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
@@ -70,7 +72,7 @@ class ExecutorNode(Node):
                 req = Executor.Request()
                 req.input = out_msg
                 res = self.executor_clients[next_node].call(req)
-                self.get_logger().info(f"ACK FROM {next_node}: {res.output}")
+                self.get_logger().debug(f"ACK FROM {next_node}: {res.output}")
 
     def process_message(self, msg_str: str) -> Generator[Tuple[str, str], None, None]:
         msg: Dict[str, Any] = json.loads(msg_str)
@@ -106,9 +108,9 @@ class ExecutorNode(Node):
             args = [self.data[execution_id][dep] for dep in task_graph[task]]
             task_output = self.graph.execute(task, *args)
             self.execution_history[execution_id].add(task)
-            if self.publish_current_task and False: # don't reset for now
+            if self.publish_current_task: # don't reset for now
                 s = String()
-                s.data = ""
+                s.data = "done "+task
                 self.current_task_publisher.publish(s)
             next_nodes = {
                 schedule[other_task] for other_task, deps in task_graph.items()
@@ -116,6 +118,9 @@ class ExecutorNode(Node):
             }
             if not next_nodes:
                 self.get_logger().info(f"OUTPUT {task}: {deserialize(task_output)}")
+                s = String()
+                s.data = "done"
+                self.output_publish.publish(s)
             for next_node in next_nodes:
                 msg = json.dumps(
                     {

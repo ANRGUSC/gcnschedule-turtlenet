@@ -1,14 +1,30 @@
 from functools import partial
 from pprint import pformat
-from typing import Dict, List
+import random
+from threading import Thread
+import time
+from typing import Dict, List, Any
 
 
 import rclpy
-from rclpy.node import Node, Publisher
+from rclpy.node import Node, Client, Publisher
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
+        # std_msgs/Header header
+        # uint32 height
+        # uint32 width
+        # string encoding
+        # uint8 is_bigendian
+        # uint32 step
+        # uint8[] data
 
+from interfaces.srv import Executor
+import json
+from uuid import uuid4
+import os
 from itertools import product
+
+from .task_graph import TaskGraph, get_graph
 
 from copy import deepcopy
 import numpy as np
@@ -63,12 +79,27 @@ class Visualizer(Node):
         # FOR DEBUGGING
         # bandwidths = {("A","B"):10,("A","C"):20}
         bandwidths = deepcopy(self.bandwidths)
+        # print(bwidth)
         graph.add_weighted_edges_from(
             [(src, dst, bw) for (src, dst), bw in bandwidths.items()]
         )
+        # rounding the bandwidth values to fit on the robot graph
+        for bw in bandwidths:
+            bandwidths[bw] = round(bandwidths[bw], 2)
 
-        fig, ax = plt.subplots()
-        nx.draw_planar(graph, ax=ax)
+        pos = nx.planar_layout(graph)
+        fig = plt.figure()
+        nx.draw(
+            graph, pos, edge_color='black', width=1, linewidths=1,
+            node_size=1500, node_color='tab:blue', alpha=0.9,
+            with_labels = True, font_weight = 'bold'
+        )
+        nx.draw_networkx_edge_labels(
+            graph, pos,
+            edge_labels=bandwidths,
+            font_color='red'
+        )
+
         fig.canvas.draw()
 
         # convert canvas to image
@@ -93,7 +124,7 @@ def main(args=None):
 
     gcn_sched = Visualizer(
         nodes=all_nodes,
-        interval=2
+        interval=1
     )
 
     try:
