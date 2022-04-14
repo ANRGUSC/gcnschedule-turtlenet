@@ -47,6 +47,7 @@ class Scheduler(Node):
         self.graph = graph
         self.interval = interval
         self.all_nodes = nodes
+        self.current_schedule = None
 
         self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
@@ -143,6 +144,7 @@ class Scheduler(Node):
     def execute(self) -> Any:
         self.get_logger().info(f"\nSTARTING NEW EXECUTION")
         schedule = self.get_schedule()
+        self.current_schedule = schedule
         self.get_logger().info(f"SCHEDULE: {pformat(schedule)}")
         message = json.dumps({
             "execution_id": uuid4().hex,
@@ -195,18 +197,26 @@ class Scheduler(Node):
             task_name = self.current_tasks[machine].lstrip("done ")
             task_machine[task_name] = color_name
 
-        self.get_logger().info(str(task_machine))
-        self.get_logger().info(str(list(graph.nodes)))
+        # self.get_logger().info(str(task_machine))
+        # self.get_logger().info(str(list(graph.nodes)))
+
+        # types = {
+        #     t: i for i, t in enumerate([*self.all_nodes,"done"])
+        # }
+        # self.get_logger().info("types "+str(types))
+        # self.get_logger().info("nodes "+str(self.all_nodes))
+        # node_color = [types["done" if "done" in task_machine.get(node,"done") else task_machine.get(node,"done")] for node in graph.nodes]
+        # cmap = cm.get_cmap('rainbow', len(self.all_nodes) + 1)
 
         types = {
-            t: i for i, t in enumerate([*self.all_nodes,"done"])
+            t: i for i, t in enumerate([*self.all_nodes])
         }
-        self.get_logger().info("types "+str(types))
-        self.get_logger().info("nodes "+str(self.all_nodes))
-        node_color = [types["done" if "done" in task_machine.get(node,"done") else task_machine.get(node,"done")] for node in graph.nodes]
+        actual_schedule = self.current_schedule
+        node_color = [types[actual_schedule.get(node)] for node in graph.nodes]
+
         self.get_logger().info("color "+str(node_color))
-        cmap = cm.get_cmap('rainbow', len(self.all_nodes) + 1)
-        labels_dict = dict([(node_name, node_name.split("_")[0][:7]) for node_name in graph.nodes])
+        cmap = cm.get_cmap('rainbow', len(self.all_nodes))
+        labels_dict = dict([(node_name, "*"+node_name.split("_")[0][:7]+"*" if node_name in task_machine.keys() else node_name.split("_")[0][:7]) for node_name in graph.nodes])
 
         pos = nx.nx_agraph.graphviz_layout(graph,prog='dot')
         fig = plt.figure()
