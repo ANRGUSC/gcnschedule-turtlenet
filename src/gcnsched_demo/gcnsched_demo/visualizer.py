@@ -81,7 +81,7 @@ class Visualizer(Node):
         bandwidths = deepcopy(self.bandwidths)
         # print(bwidth)
         graph.add_weighted_edges_from(
-            [(src, dst, bw) for (src, dst), bw in bandwidths.items()]
+            [(src, dst, bw) for (src, dst), bw in bandwidths.items().sort(key = lambda x: x[1], reverse = True)]
         )
         # rounding the bandwidth values to fit on the robot graph        
         for bw in bandwidths:

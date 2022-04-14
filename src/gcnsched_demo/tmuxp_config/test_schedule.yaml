@@ -20,5 +20,5 @@ windows:
         - ros2 launch gcnsched_demo node3_launch.py
     - shell_command:
         - ros2 launch gcnsched_demo node4_launch.py
-    - shell_command:
-        - ros2 launch gcnsched_demo sched_launch.py > test_file.txt
+    # - shell_command:
+    #     - ros2 launch gcnsched_demo sched_launch.py > test_file.txt
