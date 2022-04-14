@@ -226,7 +226,7 @@ class Scheduler(Node):
             labels=labels_dict,
             with_labels = True, font_weight = 'bold',
             font_size=8,
-            cmap=cmap,vmin=0,vmax=len(self.all_nodes)+1
+            cmap=cmap,vmin=0,vmax=len(self.all_nodes)#+1
         )
         color_lines = [mpatches.Patch(color=cmap(types[t]), label="-") if t=="done" else mpatches.Patch(color=cmap(types[t]), label=t) for t in types.keys()]
         legend = plt.legend(handles=color_lines, loc='best')
