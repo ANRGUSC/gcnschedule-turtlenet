@@ -24,6 +24,14 @@ from itertools import product
 from gcnsched.ready_to_use import find_schedule
 from .task_graph import TaskGraph, get_graph
 
+from copy import deepcopy
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib import cm
+from cv_bridge import CvBridge
+
 class Scheduler(Node):
     def __init__(self,
                  nodes: List[str],
@@ -59,6 +67,19 @@ class Scheduler(Node):
             )
 
         self.create_subscription(String, "/output", self.output_callback)
+
+        self.graph_publisher: Publisher = self.create_publisher(Image, "/taskgraph")
+        self.create_timer(1, self.draw_task_graph)
+
+        self.current_tasks: Dict[str, str] = {}
+        for node in nodes:
+            self.create_subscription(
+                String, f"/{node}/current_task",
+                partial(self.current_task_callback, node)
+            )
+
+    def current_task_callback(self, node: str, msg: String) -> None:
+        self.current_tasks[node] = msg.data
 
     def output_callback(self, msg: String) -> None:
         self.get_logger().info(f"\nFinished!! {time.time() - self.start}")
@@ -151,6 +172,67 @@ class Scheduler(Node):
                             self.get_logger().info(f'RES FROM {node}: {response.output}')
                             finished_futures.add((node, task))
             time.sleep(max(0, self.interval - (time.time() - self.start)))
+
+
+    def draw_task_graph(self) -> None:
+        self.get_logger().info("Drawing taskgraph")
+        self.current_tasks = {"node1":"min","node2":"min","node3":"min","node4":"min"}
+
+        graph = nx.DiGraph()
+
+        for task in self.graph.task_deps:
+            for dep in self.graph.task_deps[task]:
+                graph.add_edge(dep.name,task.name)
+
+        task_machine = {}
+        for machine in self.current_tasks:
+            color_name = "done" if "done" in self.current_tasks[machine] else machine
+            task_name = self.current_tasks[machine].lstrip("done ")
+            task_machine[task_name] = color_name
+
+        self.get_logger().info(str(task_machine))
+        self.get_logger().info(str(list(graph.nodes)))
+
+        types = {
+            t: i for i, t in enumerate([*self.all_nodes,"done"])
+        }
+        self.get_logger().info("types "+str(types))
+        self.get_logger().info("nodes "+str(self.all_nodes))
+        node_color = [types["done" if "done" in task_machine.get(node,"done") else task_machine.get(node,"done")] for node in graph.nodes]
+        self.get_logger().info("color "+str(node_color))
+        cmap = cm.get_cmap('rainbow', len(self.all_nodes) + 1)
+
+        pos = nx.nx_agraph.graphviz_layout(graph,prog='dot')
+        fig = plt.figure()
+        nx.draw(
+            graph, pos, edge_color='black', width=1, linewidths=1,
+            node_size=1500, node_color=node_color, alpha=0.9,
+            with_labels = True, font_weight = 'bold',cmap=cmap
+        )
+        # color_lines = [mpatches.Patch(color=cmap(types[t]), label=t) for t in types.keys()]
+        color_lines = [mpatches.Patch(color=cmap)]
+        legend = plt.legend(handles=color_lines, loc='best')
+        # nx.draw_networkx_edge_labels(
+        #     graph, pos,
+        #     edge_labels=bandwidths,
+        #     font_color='red'
+        # )
+
+        fig.canvas.draw()
+
+        # convert canvas to image
+        img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        img  = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # self.get_logger().info(str(img))
+
+        bridge = CvBridge()
+        img_msg = Image()
+        # img_msg.header.stamp = self.get_clock().now()
+        img_msg = bridge.cv2_to_imgmsg(img, encoding="rgb8")
+
+        self.graph_publisher.publish(img_msg)
+        self.get_logger().info("publishing task graph image for visualization")
+        plt.close(fig)
 
 def main(args=None):
     rclpy.init(args=args)
