@@ -67,7 +67,7 @@ class Scheduler(Node):
         self.create_subscription(String, "/output", self.output_callback)
 
         self.graph_publisher: Publisher = self.create_publisher(Image, "/taskgraph")
-        self.create_timer(1, self.draw_task_graph)
+        self.create_timer(2, self.draw_task_graph)
 
         self.current_tasks: Dict[str, str] = {}
         for node in nodes:
@@ -180,6 +180,7 @@ class Scheduler(Node):
 
 
     def draw_task_graph(self) -> None:
+        start = time.time()
         self.get_logger().info("Drawing taskgraph")
 
         graph = nx.DiGraph()
@@ -205,15 +206,19 @@ class Scheduler(Node):
         node_color = [types["done" if "done" in task_machine.get(node,"done") else task_machine.get(node,"done")] for node in graph.nodes]
         self.get_logger().info("color "+str(node_color))
         cmap = cm.get_cmap('rainbow', len(self.all_nodes) + 1)
+        labels_dict = dict([(node_name, node_name.split("_")[0][:7]) for node_name in graph.nodes])
 
         pos = nx.nx_agraph.graphviz_layout(graph,prog='dot')
         fig = plt.figure()
         nx.draw(
             graph, pos, edge_color='black', width=1, linewidths=1,
-            node_size=1500, node_color=node_color, alpha=0.9,
-            with_labels = True, font_weight = 'bold',cmap=cmap,vmin=0,vmax=len(self.all_nodes)+1
+            node_size=100, node_color=node_color, alpha=0.9,
+            labels=labels_dict,
+            with_labels = True, font_weight = 'bold',
+            font_size=8,
+            cmap=cmap,vmin=0,vmax=len(self.all_nodes)+1
         )
-        color_lines = [mpatches.Patch(color=cmap(types[t]), label=t) for t in types.keys()]
+        color_lines = [mpatches.Patch(color=cmap(types[t]), label="-") if t=="done" else mpatches.Patch(color=cmap(types[t]), label=t) for t in types.keys()]
         legend = plt.legend(handles=color_lines, loc='best')
         # nx.draw_networkx_edge_labels(
         #     graph, pos,
@@ -234,7 +239,7 @@ class Scheduler(Node):
         img_msg = bridge.cv2_to_imgmsg(img, encoding="rgb8")
 
         self.graph_publisher.publish(img_msg)
-        self.get_logger().info("publishing task graph image for visualization")
+        self.get_logger().info(f"publishing task graph image for visualization {time.time()-start} seconds")
         plt.close(fig)
 
 def main(args=None):
