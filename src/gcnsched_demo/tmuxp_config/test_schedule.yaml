@@ -10,6 +10,7 @@ windows:
   layout: tiled
   shell_command_before:
      # - source /opt/ros/dashing/setup.bash
+     - export ROS_DOMAIN_ID=20
      - . install/setup.bash
   panes:
     - shell_command:
@@ -20,5 +21,7 @@ windows:
         - ros2 launch gcnsched_demo node3_launch.py
     - shell_command:
         - ros2 launch gcnsched_demo node4_launch.py
-    # - shell_command:
-    #     - ros2 launch gcnsched_demo sched_launch.py > test_file.txt
+    - shell_command:
+        - ros2 launch gcnsched_demo sched_launch.py #> add_test_name.txt
+    - shell_command:
+        - ros2 run rqt_image_view rqt_image_view

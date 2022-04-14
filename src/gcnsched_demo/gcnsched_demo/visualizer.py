@@ -148,7 +148,7 @@ def main(args=None):
 
     gcn_sched = Visualizer(
         nodes=all_nodes,
-        interval=2
+        interval=1
     )
 
     try:
