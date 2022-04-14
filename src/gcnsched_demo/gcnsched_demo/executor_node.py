@@ -101,7 +101,7 @@ class ExecutorNode(Node):
         for task in tasks:
             self.get_logger().info(f"EXECUTING {task} ON {self.name}")
             if self.publish_current_task:
-                self.get_logger().info("publishing")
+                # self.get_logger().info("publishing")
                 s = String()
                 s.data = task
                 self.current_task_publisher.publish(s)

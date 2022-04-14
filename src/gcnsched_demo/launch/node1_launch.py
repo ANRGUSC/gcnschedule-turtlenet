@@ -10,7 +10,7 @@ def generate_launch_description():
         Node(
             package='gcnsched_demo',
             node_executable='bandwidth',
-            node_name=node_name,
+            node_name='bandwidth',
             node_namespace=node_name,
             prefix=['stdbuf -o L'],
             output='screen',
@@ -21,7 +21,7 @@ def generate_launch_description():
         Node(
             package='gcnsched_demo',
             node_executable='executor',
-            node_name=node_name,
+            node_name='executor',
             node_namespace=node_name,
             prefix=['stdbuf -o L'],
             output='screen',

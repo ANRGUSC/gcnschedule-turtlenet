@@ -1,3 +1,4 @@
+import asyncio
 from interfaces.srv import Bandwidth
 from std_msgs.msg import Float64
 import rclpy
@@ -17,6 +18,7 @@ class BandwidthNode(Node):
         super().__init__("bandwidth") #f"{name}_bandwidth")
         self.declare_parameter('name', 'default_node')
         self.declare_parameter('other_nodes',[])
+        self.interval = interval
         name = self.get_parameter('name').get_parameter_value().string_value
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
         # m_param = self.get_parameter('my_parameter').get_parameter_value().string_value
@@ -41,17 +43,30 @@ class BandwidthNode(Node):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
             self.create_timer(interval, partial(self.ping_node, cli, pub), callback_group=cb_group)
 
+    def publish_ping(self, start: float, pub: Publisher, *args, **kwargs) -> None:
+        self.get_logger().info("UNSTUCK")
+        dt = time.time() - start
+        msg = Float64()
+        msg.data = 1 / dt
+        self.get_logger().info("publishing")
+        pub.publish(msg)
+
     def ping_node(self, cli: Client, pub: Publisher) -> None:
-        MSG = "hello"
-        
+        # loop = asyncio.get_event_loop()
+        # loop.run_in_executor(None, self._ping_node, cli, pub)
+        self.get_logger().info("Inside PING NODE")
+        MSG = "hello"        
         req = Bandwidth.Request()
         req.a = MSG
         start = time.time()
-        res: Bandwidth.Response = cli.call(req)
-        dt = time.time() - start
-        msg = Float64()
-        msg.data = len(MSG.encode("utf-8")) / dt
-        pub.publish(msg)
+        self.get_logger().info("STUCK")
+        # res: Bandwidth.Response = cli.call(req)
+        fut = cli.call_async(req)
+        fut.add_done_callback(partial(self.publish_ping, start, pub))
+        time.sleep(self.interval/2)
+        if not fut.done():
+            self.get_logger().info("Node not found")
+            self.publish_ping(0, pub)
 
     def ping_callback(self, 
                       request: Bandwidth.Request, 
@@ -71,10 +86,11 @@ def main(args=None):
         interval=5
     )
     
-    executor = MultiThreadedExecutor()
+    executor = MultiThreadedExecutor(num_threads=1000)
     executor.add_node(bandwidth_client_node)
 
     executor.spin()
+    # rclpy.spin(bandwidth_client_node)
     bandwidth_client_node.destroy_node()
     rclpy.shutdown()
 
