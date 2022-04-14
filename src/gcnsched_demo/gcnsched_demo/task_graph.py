@@ -14,7 +14,7 @@ from wfcommons.wfchef.recipes.epigenomics import EpigenomicsRecipe
 from wfcommons.wfchef.recipes.srasearch import SrasearchRecipe
 from wfcommons.wfchef.recipes.genome import GenomeRecipe
 from wfcommons.wfchef.recipes.soykb import SoykbRecipe
-from wfcommons.wfchef.utils import draw
+# from wfcommons.wfchef.utils import draw
 
 import pathlib
 import json
@@ -31,8 +31,10 @@ RECIPES = {
     "soykb": SoykbRecipe
 }
 
+# RECIPE = "epigenomics"
+# NUM_TASKS = 1000
 RECIPE = "epigenomics"
-NUM_TASKS = 1000
+NUM_TASKS = 43
 
 def deserialize(text: str) -> Any:
     return pickle.loads(b64decode(text))
@@ -71,12 +73,12 @@ class TaskGraph:
     def _add_task(self, task: Task, *deps: Task) -> None:
         self.task_deps[task] = deps
         self.task_names[task.name] = task
-        
+
     def add_task(self, fun: Callable, *deps: Task) -> Task:
         def _fun(*args, **kwargs) -> Any:
             args = [deserialize(arg) for arg in args]
             kwargs = {
-                key: deserialize(value) 
+                key: deserialize(value)
                 for key, value in kwargs.items()
             }
             return serialize(fun(*args, **kwargs))
@@ -98,7 +100,7 @@ class TaskGraph:
 
     def end_tasks(self) -> List[str]:
         source_tasks = {
-            dep.name for _, task in self.task_names.items() 
+            dep.name for _, task in self.task_names.items()
             for dep in self.task_deps[task]
         }
         return list(set(self.task_names.keys()) - source_tasks)
@@ -116,7 +118,7 @@ task_stats_path = pathlib.Path(inspect.getfile(RECIPES[RECIPE])).parent.joinpath
 task_stats = json.loads(pathlib.Path(task_stats_path).read_text())
 
 def get_graph() -> TaskGraph:
-    recipe = RECIPES[RECIPE](num_tasks=NUM_TASKS) 
+    recipe = RECIPES[RECIPE](num_tasks=NUM_TASKS)
     workflow: Workflow = recipe.build_workflow("my_workflow")
 
     # draw(workflow, save=thisdir.joinpath("graph"))
@@ -131,11 +133,11 @@ def get_graph() -> TaskGraph:
 
         if task_type not in tasks:
             def run(*args, **kwargs) -> str:
-                time.sleep(runtime)
+                time.sleep(runtime/100)
                 return "Nothing"
 
             task_functions[task_type] = run
-        
+
         tasks[node] = Task(node, run, cost=runtime)
 
     src = Task("SRC", lambda *args, **kwargs: "SRC OUTPUT")
@@ -143,8 +145,8 @@ def get_graph() -> TaskGraph:
 
     task_graph = TaskGraph()
     end_tasks = []
-    
-    task_graph._add_task(src) 
+
+    task_graph._add_task(src)
     for name, task in tasks.items():
         if workflow.in_degree(name) == 0:
             task_graph._add_task(task, src)
@@ -154,10 +156,10 @@ def get_graph() -> TaskGraph:
         if workflow.out_degree(name) == 0:
             end_tasks.append(task)
 
-    task_graph._add_task(dst, *end_tasks) 
+    task_graph._add_task(dst, *end_tasks)
 
     return task_graph
-    
+
 
 if __name__ == "__main__":
     print(get_graph())
