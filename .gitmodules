@@ -5,3 +5,6 @@
 	path = edGNN
 	url = https://github.com/ANRGUSC/edGNN
 	branch = feature/gcnsched
+[submodule "wfcommons"]
+	path = wfcommons
+	url = https://github.com/wfcommons/wfcommons.git

@@ -2,7 +2,37 @@ from base64 import b64encode, b64decode
 from typing import Any, Callable, Dict, List
 import pickle
 
-import numpy as np
+import inspect
+import time
+from wfcommons.common.workflow import Workflow
+from wfcommons.wfchef.recipes.cycles.recipe import CyclesRecipe
+from wfcommons.wfchef.recipes.montage import MontageRecipe
+from wfcommons.wfchef.recipes.seismology import SeismologyRecipe
+from wfcommons.wfchef.recipes.blast import BlastRecipe
+from wfcommons.wfchef.recipes.bwa import BwaRecipe
+from wfcommons.wfchef.recipes.epigenomics import EpigenomicsRecipe
+from wfcommons.wfchef.recipes.srasearch import SrasearchRecipe
+from wfcommons.wfchef.recipes.genome import GenomeRecipe
+from wfcommons.wfchef.recipes.soykb import SoykbRecipe
+from wfcommons.wfchef.utils import draw
+
+import pathlib
+import json
+
+RECIPES = {
+    "montage": MontageRecipe,
+    "cycles": CyclesRecipe,
+    "seismology": SeismologyRecipe,
+    "blast": BlastRecipe,
+    "bwa": BwaRecipe,
+    "epigenomics": EpigenomicsRecipe,
+    "srasearch": SrasearchRecipe,
+    "genome": GenomeRecipe,
+    "soykb": SoykbRecipe
+}
+
+RECIPE = "epigenomics"
+NUM_TASKS = 1000
 
 def deserialize(text: str) -> Any:
     return pickle.loads(b64decode(text))
@@ -11,9 +41,10 @@ def serialize(obj: Any) -> str:
     return b64encode(pickle.dumps(obj)).decode("utf-8")
 
 class Task:
-    def __init__(self, name: str, call: Callable) -> None:
+    def __init__(self, name: str, call: Callable, cost: float = 0.0) -> None:
         self.name = name
         self.call = call
+        self.cost = cost
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.call(*args, **kwds)
@@ -36,6 +67,10 @@ class TaskGraph:
         def _task(fun: Callable) -> Any:
             return self.add_task(fun, *deps)
         return _task
+
+    def _add_task(self, task: Task, *deps: Task) -> None:
+        self.task_deps[task] = deps
+        self.task_names[task.name] = task
         
     def add_task(self, fun: Callable, *deps: Task) -> Task:
         def _fun(*args, **kwargs) -> Any:
@@ -46,8 +81,7 @@ class TaskGraph:
             }
             return serialize(fun(*args, **kwargs))
         task = Task(fun.__name__, _fun)
-        self.task_deps[task] = deps
-        self.task_names[task.name] = task
+        self._add_task(task, deps)
         return task
 
     def __str__(self) -> str:
@@ -75,39 +109,55 @@ class TaskGraph:
             for task, deps in self.task_deps.items()
         }
 
+
+
+thisdir = pathlib.Path(__file__).resolve().parent
+task_stats_path = pathlib.Path(inspect.getfile(RECIPES[RECIPE])).parent.joinpath("task_type_stats.json")
+task_stats = json.loads(pathlib.Path(task_stats_path).read_text())
+
 def get_graph() -> TaskGraph:
-    graph = TaskGraph()
-    
-    @graph.task()
-    def get_data() -> np.array:
-        return 5
+    recipe = RECIPES[RECIPE](num_tasks=NUM_TASKS) 
+    workflow: Workflow = recipe.build_workflow("my_workflow")
 
-    @graph.task()
-    def get_size() -> np.array:
-        return 100
+    # draw(workflow, save=thisdir.joinpath("graph"))
 
-    @graph.task(get_data, get_size)
-    def generate_data(data: float, size: int) -> np.array:
-        return np.ones(size) * data
+    task_functions = {}
+    tasks = {}
+    for node in workflow.nodes:
+        print((workflow.nodes[node]["task"].category))
+        task_type = workflow.nodes[node]["task"].category
+        stats = task_stats[task_type]
+        runtime = (stats["runtime"]["max"] - stats["runtime"]["min"])/2
 
-    @graph.task(generate_data)
-    def add_noise(arr: np.ndarray) -> np.array:
-        return arr + np.random.random(arr.shape)
+        if task_type not in tasks:
+            def run(*args, **kwargs) -> str:
+                time.sleep(runtime)
+                return "Nothing"
 
-    @graph.task(add_noise)
-    def mean(arr: np.ndarray) -> float:
-        return np.mean(arr)
+            task_functions[task_type] = run
         
-    @graph.task(add_noise)
-    def min(arr: np.ndarray) -> float:
-        return np.min(arr)
+        tasks[node] = Task(node, run, cost=runtime)
 
-    @graph.task(add_noise)
-    def max(arr: np.ndarray) -> float:
-        return np.max(arr)
+    src = Task("SRC", lambda *args, **kwargs: "SRC OUTPUT")
+    dst = Task("DST", lambda *args, **kwargs: "DST OUTPUT")
 
-    @graph.task(min, max)
-    def midpoint(arr_min: float, arr_max: float) -> float:
-        return (arr_min + arr_max) / 2
+    task_graph = TaskGraph()
+    end_tasks = []
+    
+    task_graph._add_task(src) 
+    for name, task in tasks.items():
+        if workflow.in_degree(name) == 0:
+            task_graph._add_task(task, src)
+        else:
+            task_graph._add_task(task, *[tasks[dep] for dep, _ in workflow.in_edges(name)])
 
-    return graph
+        if workflow.out_degree(name) == 0:
+            end_tasks.append(task)
+
+    task_graph._add_task(dst, *end_tasks) 
+
+    return task_graph
+    
+
+if __name__ == "__main__":
+    print(get_graph())
