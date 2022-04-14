@@ -60,7 +60,6 @@ class BandwidthNode(Node):
         req.a = MSG
         start = time.time()
         self.get_logger().info("STUCK")
-    
         # res: Bandwidth.Response = cli.call(req)
         fut = cli.call_async(req)
         fut.add_done_callback(partial(self.publish_ping, start, pub))
