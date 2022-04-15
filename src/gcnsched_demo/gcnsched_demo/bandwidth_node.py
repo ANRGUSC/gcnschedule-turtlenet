@@ -44,6 +44,7 @@ class BandwidthNode(Node):
     def publish_ping(self, start: float, pub: Publisher, req_length: int, *args, **kwargs) -> None:
         self.get_logger().info("UNSTUCK")
         dt = time.time() - start
+        self.get_logger().info("TIME For Ping service: ", dt)
         msg = Float64()
         msg.data = req_length / dt # take message size into account
         self.get_logger().info("publishing")
@@ -54,11 +55,17 @@ class BandwidthNode(Node):
         MSG = "hello"*1000
         req_length = len(MSG.encode("utf-8"))
         req = Bandwidth.Request()
-        req.a = MSG
-        start = time.time()
+        req.a = MSG        
         self.get_logger().info("STUCK")
-        fut = cli.call_async(req)
-        fut.add_done_callback(partial(self.publish_ping, start, pub, req_length))
+        #TODO: fix the wait for service 
+        temp_start = time.time()
+        if cli.wait_for_service(timeout_sec=self.interval/2):
+            self.get_logger("Time until service is ready:",(time.time() - temp_start))
+            start = time.time()
+            fut = cli.call_async(req)
+            fut.add_done_callback(partial(self.publish_ping, start, pub, req_length))
+        else: #if wait for service failed
+            self.get_logger().info("****FAILED*****")
 
     def ping_callback(self,
                       request: Bandwidth.Request,
