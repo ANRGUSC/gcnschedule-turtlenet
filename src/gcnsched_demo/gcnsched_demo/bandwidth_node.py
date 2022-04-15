@@ -44,7 +44,7 @@ class BandwidthNode(Node):
     def publish_ping(self, start: float, pub: Publisher, req_length: int, *args, **kwargs) -> None:
         self.get_logger().info("UNSTUCK")
         dt = time.time() - start
-        self.get_logger().info("TIME For Ping service: ", dt)
+        self.get_logger().info(f'TIME For Ping service:{dt}')
         msg = Float64()
         msg.data = req_length / dt # take message size into account
         self.get_logger().info("publishing")
