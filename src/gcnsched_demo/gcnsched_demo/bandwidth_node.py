@@ -41,23 +41,24 @@ class BandwidthNode(Node):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
             self.create_timer(interval, partial(self.ping_node, cli, pub), callback_group=cb_group)
 
-    def publish_ping(self, start: float, pub: Publisher, *args, **kwargs) -> None:
+    def publish_ping(self, start: float, pub: Publisher, req_length: int, *args, **kwargs) -> None:
         self.get_logger().debug("UNSTUCK")
         dt = time.time() - start
         msg = Float64()
-        msg.data = 1 / dt
+        msg.data = req_length / dt # take message size into account
         self.get_logger().debug("publishing")
         pub.publish(msg)
 
     def ping_node(self, cli: Client, pub: Publisher) -> None:
         self.get_logger().debug("Inside PING NODE")
-        MSG = "hello"*1000        
+        MSG = "hello"*1000
+        req_length = len(MSG.encode("utf-8"))
         req = Bandwidth.Request()
         req.a = MSG
         start = time.time()
         self.get_logger().debug("STUCK")
         fut = cli.call_async(req)
-        fut.add_done_callback(partial(self.publish_ping, start, pub))
+        fut.add_done_callback(partial(self.publish_ping, start, pub, req_length))
 
     def ping_callback(self,
                       request: Bandwidth.Request,
