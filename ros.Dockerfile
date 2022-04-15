@@ -2,11 +2,12 @@ FROM ros:dashing
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update \
-    && apt install -y python3-colcon-common-extensions libjpeg-dev zlib1g-dev python3-pip
-RUN pip3 install matplotlib networkx torch
-RUN pip3 install git+https://github.com/ANRGUSC/edGNN.git@feature/gcnsched
-RUN pip3 install --upgrade pip && pip3 install opencv-python
-RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
-RUN apt-get install -y ros-dashing-cv-bridge
-RUN pip3 install wfcommons
+    && apt install -y python3-colcon-common-extensions libjpeg-dev zlib1g-dev python3-pip ffmpeg libsm6 libxext6 ros-dashing-cv-bridge
+RUN pip3 install matplotlib networkx torch \
+    && pip3 install git+https://github.com/ANRGUSC/edGNN.git@feature/gcnsched \
+    && pip3 install --upgrade pip && pip3 install opencv-python \
+    && pip3 install wfcommons
+
+RUN apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config \
+    && pip3 install graphviz pygraphviz
 WORKDIR /workspace 

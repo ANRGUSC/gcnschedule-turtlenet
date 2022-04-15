@@ -11,6 +11,7 @@ from threading import Thread
 from .task_graph import TaskGraph, deserialize, get_graph
 
 from std_msgs.msg import String
+from rclpy.executors import MultiThreadedExecutor
 
 class ExecutorNode(Node):
     def __init__(self,
@@ -63,6 +64,7 @@ class ExecutorNode(Node):
     def executor_callback(self, request, response) -> Executor.Response:
         self.queue.put(request.input)
         response.output = "ACK"
+        self.get_logger().info("SENDING ACK")
         return response
 
     def proccessing_thread(self) -> None:
@@ -143,16 +145,23 @@ def main(args=None):
 
     name = "default_node"
     all_nodes = []
-    executor = ExecutorNode(
+    executor_node = ExecutorNode(
         name=name,
         graph=get_graph(),
         other_nodes=[node for node in all_nodes if node != name]
     )
 
-    while rclpy.ok():
-        rclpy.spin_once(executor)
 
-    executor.destroy_node()
+    
+    # executor = MultiThreadedExecutor(num_threads=1000)
+    # executor.add_node(executor_node)
+
+    # executor.spin()
+
+    while rclpy.ok():
+        rclpy.spin_once(executor_node)
+
+    executor_node.destroy_node()
     rclpy.shutdown()
 
 

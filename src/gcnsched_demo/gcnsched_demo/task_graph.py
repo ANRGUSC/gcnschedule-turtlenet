@@ -1,5 +1,5 @@
 from base64 import b64encode, b64decode
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 import pickle
 
 import inspect
@@ -15,7 +15,7 @@ from wfcommons.wfchef.recipes.srasearch import SrasearchRecipe
 from wfcommons.wfchef.recipes.genome import GenomeRecipe
 from wfcommons.wfchef.recipes.soykb import SoykbRecipe
 from wfcommons.wfchef.utils import draw
-
+import networkx as nx
 import pathlib
 import json
 
@@ -32,7 +32,7 @@ RECIPES = {
 }
 
 RECIPE = "epigenomics"
-NUM_TASKS = 1000
+NUM_TASKS = 43
 
 def deserialize(text: str) -> Any:
     return pickle.loads(b64decode(text))
@@ -68,11 +68,7 @@ class TaskGraph:
             return self.add_task(fun, *deps)
         return _task
 
-    def _add_task(self, task: Task, *deps: Task) -> None:
-        self.task_deps[task] = deps
-        self.task_names[task.name] = task
-        
-    def add_task(self, fun: Callable, *deps: Task) -> Task:
+    def add_task(self, fun: Callable, *deps: Task, name: Optional[str] = None, cost: float = 0.0) -> Task:
         def _fun(*args, **kwargs) -> Any:
             args = [deserialize(arg) for arg in args]
             kwargs = {
@@ -80,8 +76,9 @@ class TaskGraph:
                 for key, value in kwargs.items()
             }
             return serialize(fun(*args, **kwargs))
-        task = Task(fun.__name__, _fun)
-        self._add_task(task, deps)
+        task = Task(fun.__name__ if not name else name, _fun, cost=cost)
+        self.task_deps[task] = deps
+        self.task_names[task.name] = task
         return task
 
     def __str__(self) -> str:
@@ -109,55 +106,50 @@ class TaskGraph:
             for task, deps in self.task_deps.items()
         }
 
-
-
 thisdir = pathlib.Path(__file__).resolve().parent
 task_stats_path = pathlib.Path(inspect.getfile(RECIPES[RECIPE])).parent.joinpath("task_type_stats.json")
 task_stats = json.loads(pathlib.Path(task_stats_path).read_text())
 
 def get_graph() -> TaskGraph:
-    recipe = RECIPES[RECIPE](num_tasks=NUM_TASKS) 
-    workflow: Workflow = recipe.build_workflow("my_workflow")
+    microstructures_path = pathlib.Path(inspect.getfile(RECIPES[RECIPE])).parent.joinpath("microstructures")
+    workflow = None
+    for graph_pickle in microstructures_path.glob("*/base_graph.pickle"):
+        graph: nx.DiGraph = pickle.loads(graph_pickle.read_bytes())
+        if workflow is None or graph.order() <= workflow.order():
+            workflow = graph
+        
+    task_graph = TaskGraph()
 
-    # draw(workflow, save=thisdir.joinpath("graph"))
-
+    visited = {}
+    final_nodes = []
     task_functions = {}
-    tasks = {}
-    for node in workflow.nodes:
-        print((workflow.nodes[node]["task"].category))
-        task_type = workflow.nodes[node]["task"].category
-        stats = task_stats[task_type]
+    
+    queue = [task_name for task_name in workflow.nodes if workflow.in_degree(task_name) == 0]
+    while queue:
+        node = queue.pop(0)
+        if node in visited:
+            continue
+        queue.extend(list(workflow.successors(node)))
+
+        task_type = workflow.nodes[node]["type"]
+        stats = task_stats.get(task_type, {"runtime": {"min": 0, "max": 0}})
         runtime = (stats["runtime"]["max"] - stats["runtime"]["min"])/2
 
-        if task_type not in tasks:
+        if task_type not in task_functions:
             def run(*args, **kwargs) -> str:
-                time.sleep(runtime)
+                time.sleep(runtime/100)
                 return "Nothing"
-
             task_functions[task_type] = run
         
-        tasks[node] = Task(node, run, cost=runtime)
+        deps = [
+            visited[dep_name] for dep_name, _ in workflow.in_edges(node)
+        ]
+        visited[node] = task_graph.add_task(task_functions[task_type], *deps, name=node, cost=runtime)
 
-    src = Task("SRC", lambda *args, **kwargs: "SRC OUTPUT")
-    dst = Task("DST", lambda *args, **kwargs: "DST OUTPUT")
-
-    task_graph = TaskGraph()
-    end_tasks = []
+        if workflow.out_degree(node) == 0:
+            final_nodes.append(visited[node])
     
-    task_graph._add_task(src) 
-    for name, task in tasks.items():
-        if workflow.in_degree(name) == 0:
-            task_graph._add_task(task, src)
-        else:
-            task_graph._add_task(task, *[tasks[dep] for dep, _ in workflow.in_edges(name)])
-
-        if workflow.out_degree(name) == 0:
-            end_tasks.append(task)
-
-    task_graph._add_task(dst, *end_tasks) 
-
     return task_graph
     
-
 if __name__ == "__main__":
     print(get_graph())

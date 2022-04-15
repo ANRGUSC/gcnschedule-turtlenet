@@ -29,6 +29,7 @@ tasks:
       pip install -e ./rosboard
       pip install -e ./edGNN
       pip install -e ./edGNN/heft
+      pip install -e ./wfcommons
 ports:
   - port: 8888
     visibility: private

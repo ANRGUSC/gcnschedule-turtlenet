@@ -3,7 +3,7 @@ from pprint import pformat
 import random
 from threading import Thread
 import time
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 
 
 import rclpy
@@ -42,11 +42,11 @@ class Visualizer(Node):
         self.declare_parameter('interval', 10)
         nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
         self.interval = self.get_parameter('interval').get_parameter_value().integer_value
-        print(nodes)
+        self.all_nodes = nodes
 
         self.get_logger().info("VISUALIZER INIT")
 
-        self.bandwidths: Dict[str, Dict[str, float]] = {}
+        self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
             self.create_subscription(
                 Float64, f"/{src}/{dst}/bandwidth",
@@ -64,51 +64,48 @@ class Visualizer(Node):
             )
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
-        self.bandwidths[(src, dst)] = msg.data
-        # print("BANDWIDTHS:", pformat(self.bandwidths))
-        # self.get_logger().info("bandwidth callback")
+        self.bandwidths[(src, dst)] = time.time(), msg.data
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
+        
+    def get_bandwidth(self, n1: str, n2: str) -> float:
+        now = time.time()
+        ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
+        ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
+        if ptime_1 > ptime_2:
+            bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
+        else:
+            bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
+
+        return bandwidth + 1e-9
 
     def draw_network(self) -> None:
         self.get_logger().info("Bandwidths:"+pformat(self.bandwidths))
         self.get_logger().info("Assignment:"+pformat(self.current_tasks))
 
         graph = nx.Graph()
-        # FOR DEBUGGING
-        # bandwidths = {("A","B"):10,("A","C"):20}
-        bandwidths = deepcopy(self.bandwidths)
-        # FOR DEBUGGING 
-    #     bandwidths = {('node1', 'node2'): 6.060715075603744e-10,
-    #    ('node1', 'node3'): 281.7616552465404,
-    #    ('node1', 'node4'): 246.73827872227778,
-    #    ('node2', 'node1'): 115.61244797265635,
-    #    ('node2', 'node3'): 176.00939991607217,
-    #    ('node2', 'node4'): 187.95895137799687,
-    #    ('node3', 'node1'): 429.260464640262,
-    #    ('node3', 'node2'): 6.060715075446431e-10,
-    #    ('node3', 'node4'): 271.56387180317256,
-    #    ('node4', 'node1'): 456.10091344062636,
-    #    ('node4', 'node2'): 6.060715076076258e-10,
-    #    ('node4', 'node3'): 95.15856342310049}
-        # print(bwidth)
+        # bandwidths = deepcopy(self.bandwidths)
         self.get_logger().info("STARTING add weights")
         
-        bandwidth_set = set()
-        updated_bandwidth = {}
-        for src,dst in bandwidths.keys():
-            if (src,dst) in bandwidth_set or (dst,src) in bandwidth_set:
-                continue
-            else:
-                bandwidth_set.add((src,dst))
-        #updating the bandwidths 
-        for src,dst in bandwidth_set:
-            updated_bandwidth[(src,dst)] = round(min(bandwidths[(src,dst)], bandwidths[(dst,src)]),2)
+        # bandwidth_set = set()
+        # updated_bandwidth = {}
+        # for src,dst in bandwidths.keys():
+        #     if (src,dst) in bandwidth_set or (dst,src) in bandwidth_set:
+        #         continue
+        #     else:
+        #         bandwidth_set.add((src,dst))
+        # #updating the bandwidths 
+        # for src,dst in bandwidth_set:
+        #     updated_bandwidth[(src,dst)] = round(min(bandwidths[(src,dst)], bandwidths[(dst,src)]),2)
 
-        self.get_logger().info(pformat(updated_bandwidth))
+        # self.get_logger().info(pformat(updated_bandwidth))
+        edge_labels = {
+            (src, dst): f"{self.get_bandwidth(src, dst):0.2f}"
+            for src, dst in product(self.all_nodes, self.all_nodes)
+        }
         graph.add_weighted_edges_from(
-            [(src, dst, bw) for (src, dst), bw in updated_bandwidth.items()]
+            [(src, dst, bw) for (src, dst), bw in edge_labels.items()]
         )
        
         pos = nx.planar_layout(graph)
@@ -120,7 +117,7 @@ class Visualizer(Node):
         )
         nx.draw_networkx_edge_labels(
             graph, pos,
-            edge_labels=updated_bandwidth,
+            edge_labels=edge_labels,
             font_color='red'
         )
 
