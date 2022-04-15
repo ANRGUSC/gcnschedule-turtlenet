@@ -16,7 +16,7 @@ def generate_launch_description():
             parameters=[
                 {'name': node_name, 'other_nodes': other_nodes, }
             ],
-            arguments=[('__log_level:=debug')]
+            # arguments=[('__log_level:=debug')]
         ),
         Node(
             package='gcnsched_demo',
