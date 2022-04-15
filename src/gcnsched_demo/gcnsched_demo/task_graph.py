@@ -1,4 +1,5 @@
 from base64 import b64encode, b64decode
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional
 import pickle
 
@@ -110,6 +111,11 @@ thisdir = pathlib.Path(__file__).resolve().parent
 task_stats_path = pathlib.Path(inspect.getfile(RECIPES[RECIPE])).parent.joinpath("task_type_stats.json")
 task_stats = json.loads(pathlib.Path(task_stats_path).read_text())
 
+def fake_execute(name: str, execution_time: float, *args, **kwargs) -> str:
+    print(f"{name}: SLEEPING FOR {execution_time} SECONDS")
+    time.sleep(execution_time)
+    return "Nothing"
+
 def get_graph() -> TaskGraph:
     microstructures_path = pathlib.Path(inspect.getfile(RECIPES[RECIPE])).parent.joinpath("microstructures")
     workflow = None
@@ -136,10 +142,7 @@ def get_graph() -> TaskGraph:
         runtime = (stats["runtime"]["max"] - stats["runtime"]["min"])/2
 
         if task_type not in task_functions:
-            def run(*args, **kwargs) -> str:
-                time.sleep(runtime/100)
-                return "Nothing"
-            task_functions[task_type] = run
+            task_functions[task_type] = partial(fake_execute, task_type, runtime/100)
         
         deps = [
             visited[dep_name] for dep_name, _ in workflow.in_edges(node)

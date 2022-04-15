@@ -121,7 +121,12 @@ class ExecutorNode(Node):
             if not next_nodes:
                 self.get_logger().info(f"OUTPUT {task}: {deserialize(task_output)}")
                 s = String()
-                s.data = "done"
+                s.data = json.dumps(
+                    {
+                        "status": "done", 
+                        "execution_id": execution_id
+                    }
+                )
                 self.output_publish.publish(s)
             for next_node in next_nodes:
                 msg = json.dumps(
@@ -150,13 +155,6 @@ def main(args=None):
         graph=get_graph(),
         other_nodes=[node for node in all_nodes if node != name]
     )
-
-
-    
-    # executor = MultiThreadedExecutor(num_threads=1000)
-    # executor.add_node(executor_node)
-
-    # executor.spin()
 
     while rclpy.ok():
         rclpy.spin_once(executor_node)

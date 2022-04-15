@@ -1,12 +1,11 @@
-import enum
+from asyncio import Future
 from functools import partial
 from pprint import pformat
-import random
 from re import I
 from threading import Thread
 import time
 import traceback
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 
@@ -50,6 +49,7 @@ class Scheduler(Node):
         self.all_nodes = nodes
 
         self.current_schedule = {}
+        self.start_times = {}
 
         self.executor_clients: Dict[str, Client] = {}
         for node in nodes:
@@ -68,6 +68,7 @@ class Scheduler(Node):
             )
 
         self.create_subscription(String, "/output", self.output_callback)
+        self.makespan_publisher = self.create_publisher(Float64, "/makespan", 10)
 
         self.graph_publisher: Publisher = self.create_publisher(Image, "/taskgraph")
         self.create_timer(2, self.draw_task_graph)
@@ -94,7 +95,13 @@ class Scheduler(Node):
         self.current_tasks[node] = msg.data
 
     def output_callback(self, msg: String) -> None:
-        self.get_logger().info(f"\nFinished!! {time.time() - self.start}")
+        try:
+            msg_data = json.loads(msg.data)
+            makespan = Float64()
+            makespan.data = time.time() - self.start_times[msg_data["execution_id"]]
+            self.makespan_publisher.publish(makespan)
+        except:
+            self.get_logger().error(traceback.format_exc())
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
         self.bandwidths[(src, dst)] = time.time(), msg.data
@@ -159,18 +166,20 @@ class Scheduler(Node):
         finally:
             self.get_logger().debug("exiting get schedule function")
 
-    def execute(self) -> Any:
+    def execute(self) -> Tuple[str, List[Future]]:
         self.get_logger().info(f"\nSTARTING NEW EXECUTION")
         schedule = self.get_schedule()
         self.current_schedule = deepcopy(schedule)
         self.get_logger().info(f"SCHEDULE: {pformat(schedule)}")
+        execution_id = uuid4().hex
         message = json.dumps({
-            "execution_id": uuid4().hex,
+            "execution_id": execution_id,
             "data": {},
             "task_graph": self.graph.summary(),
             "schedule": schedule
         })
 
+        self.start_times[execution_id] = time.time()
         futures = []
         for task in self.graph.start_tasks():
             node = schedule[task]
@@ -184,7 +193,7 @@ class Scheduler(Node):
     def execute_thread(self) -> None:
         try:
             while True:
-                self.start = time.time()
+                start = time.time()
                 futures = self.execute()
                 finished_futures = set()
                 while len(finished_futures) < len(futures):
@@ -200,7 +209,7 @@ class Scheduler(Node):
                         else:
                             print(f"Future not done for {node} executing {task}")
                     time.sleep(self.interval / 10)
-                time.sleep(max(0, self.interval - (time.time() - self.start)))
+                time.sleep(max(0, self.interval - (time.time() - start)))
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
