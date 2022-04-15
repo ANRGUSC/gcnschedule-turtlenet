@@ -24,4 +24,5 @@ windows:
     - shell_command:
         - ros2 launch gcnsched_demo sched_launch.py #> add_test_name.txt
     - shell_command:
-        - ros2 run rqt_image_view rqt_image_view
+        # - ros2 run rqt_image_view rqt_image_view
+        - ros2 run rosboard rosboard_node

@@ -232,7 +232,7 @@ class Scheduler(Node):
             }
             self.get_logger().info("types "+str(types))
             self.get_logger().info("nodes "+str(self.all_nodes))
-            
+
             current_schedule = deepcopy(self.current_schedule)
             {node: task for task, node in current_schedule.items()}
             node_color = [
@@ -248,7 +248,7 @@ class Scheduler(Node):
                 graph, pos, edge_color='black', width=1, linewidths=1,
                 node_size=200, node_color=node_color, alpha=0.8,
                 labels=labels_dict,
-                with_labels = False, 
+                with_labels = False,
                 font_weight = 'bold',
                 font_size=8,
                 cmap=cmap,vmin=0,vmax=len(self.all_nodes)
@@ -279,7 +279,7 @@ class Scheduler(Node):
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
-            self.get_logger().error(f"leaving task graph drawer")
+            self.get_logger().info(f"leaving task graph drawer")
 
 def main(args=None):
     rclpy.init(args=args)

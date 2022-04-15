@@ -51,7 +51,7 @@ class BandwidthNode(Node):
 
     def ping_node(self, cli: Client, pub: Publisher) -> None:
         self.get_logger().debug("Inside PING NODE")
-        MSG = "hello"        
+        MSG = "hello"*1000        
         req = Bandwidth.Request()
         req.a = MSG
         start = time.time()
@@ -59,15 +59,15 @@ class BandwidthNode(Node):
         fut = cli.call_async(req)
         fut.add_done_callback(partial(self.publish_ping, start, pub))
 
-    def ping_callback(self, 
-                      request: Bandwidth.Request, 
+    def ping_callback(self,
+                      request: Bandwidth.Request,
                       response: Bandwidth.Response) -> Bandwidth.Response:
         response.b = request.a
         return response
 
 def main(args=None):
     rclpy.init(args=args)
-    
+
     name = "default-node"
     all_nodes = []
 
@@ -76,7 +76,7 @@ def main(args=None):
         other_nodes=[node for node in all_nodes if node != name],
         interval=5
     )
-    
+
     # executor = MultiThreadedExecutor(num_threads=1000)
     # executor.add_node(bandwidth_client_node)
 

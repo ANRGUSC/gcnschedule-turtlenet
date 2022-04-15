@@ -61,6 +61,8 @@ class ExecutorNode(Node):
         thread = Thread(target=self.proccessing_thread)
         thread.start()
 
+        self.get_logger().info("EXECUTOR NODE HAS STARTED :)")
+
     def executor_callback(self, request, response) -> Executor.Response:
         self.queue.put(request.input)
         response.output = "ACK"
@@ -123,7 +125,7 @@ class ExecutorNode(Node):
                 s = String()
                 s.data = json.dumps(
                     {
-                        "status": "done", 
+                        "status": "done",
                         "execution_id": execution_id
                     }
                 )
