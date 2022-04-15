@@ -60,12 +60,12 @@ class BandwidthNode(Node):
         #TODO: fix the wait for service 
         temp_start = time.time()
         if cli.wait_for_service(timeout_sec=self.interval/2):
-            self.get_logger(f'Time until service is ready: {(time.time() - temp_start)}')
+            self.get_logger().info(f'Time until service is ready: {(time.time() - temp_start)}')
             start = time.time()
             fut = cli.call_async(req)
             fut.add_done_callback(partial(self.publish_ping, start, pub, req_length))
         else: #if wait for service failed
-            self.get_logger(f'Time it took to FAIL: {(time.time() - temp_start)}')
+            self.get_logger().info(f'Time it took to FAIL: {(time.time() - temp_start)}')
             self.get_logger().info("****FAILED*****")
 
     def ping_callback(self,
