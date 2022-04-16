@@ -5,7 +5,6 @@ import pickle
 
 import inspect
 import time
-from wfcommons.common.workflow import Workflow
 from wfcommons.wfchef.recipes.cycles.recipe import CyclesRecipe
 from wfcommons.wfchef.recipes.montage import MontageRecipe
 from wfcommons.wfchef.recipes.seismology import SeismologyRecipe

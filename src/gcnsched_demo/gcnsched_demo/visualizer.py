@@ -1,32 +1,15 @@
 from functools import partial
 from pprint import pformat
-import random
-from threading import Thread
 import time
-from typing import Dict, List, Any, Tuple
-
+from typing import Dict, List, Tuple
 
 import rclpy
-from rclpy.node import Node, Client, Publisher
+from rclpy.node import Node,  Publisher
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
-        # std_msgs/Header header
-        # uint32 height
-        # uint32 width
-        # string encoding
-        # uint8 is_bigendian
-        # uint32 step
-        # uint8[] data
 
-from interfaces.srv import Executor
-import json
-from uuid import uuid4
-import os
 from itertools import product
 
-from .task_graph import TaskGraph, get_graph
-
-from copy import deepcopy
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt

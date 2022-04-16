@@ -18,7 +18,6 @@ class BandwidthNode(Node):
         self.declare_parameter('name', 'default_node')
         self.declare_parameter('other_nodes',[])
         self.interval = interval
-        print("INTERVAL", interval)
         name = self.get_parameter('name').get_parameter_value().string_value
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
         self.get_logger().info(f"INIT {name}")
