@@ -1,4 +1,5 @@
 from functools import partial
+import threading
 from .client_timeout import ClientTimeouter
 from interfaces.srv import Executor
 import rclpy
@@ -64,6 +65,12 @@ class ExecutorNode(Node):
 
         thread = Thread(target=self.proccessing_thread)
         thread.start()
+
+        self.create_timer(1, self.print_active_threads)
+
+    def print_active_threads(self):
+        self.get_logger().info(f"Active Threads: {threading.active_count()}")
+
 
     def executor_callback(self, request, response) -> Executor.Response:
         self.queue.put(request.input)

@@ -1,10 +1,10 @@
+import threading
 import traceback
 from interfaces.srv import Bandwidth
 from std_msgs.msg import Float64
 import rclpy
-from rclpy.node import Node, Client, Publisher
+from rclpy.node import Node, Publisher
 from rclpy.callback_groups import ReentrantCallbackGroup
-import time
 from functools import partial
 from typing import List
 
@@ -49,6 +49,12 @@ class BandwidthNode(Node):
             self.create_timer(interval, partial(self.ping_node, cli_timeouter, pub), callback_group=cb_group)
 
         self.get_logger().info("Bandwidth node has started!")
+
+        self.create_timer(1, self.print_active_threads)
+
+    def print_active_threads(self):
+        self.get_logger().info(f"Active Threads: {threading.active_count()}")
+
 
     def publish_ping(self, dt: float, res, pub: Publisher, *args, **kwargs) -> None:
         try:

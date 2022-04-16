@@ -1,7 +1,6 @@
 from functools import partial
 from pprint import pformat
-from re import I
-from threading import Thread
+import threading
 import time
 import traceback
 from typing import Dict, List, Tuple
@@ -39,7 +38,7 @@ class Scheduler(Node):
         #getting parameters from the launch file
         self.declare_parameter('nodes', [])
         self.declare_parameter('interval', 10)
-        self.declare_parameter('scheduler', "heft")
+        self.declare_parameter('scheduler', "gcn")
         nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
         self.scheduler = self.get_parameter('scheduler').get_parameter_value().string_value
         self.interval = self.get_parameter('interval').get_parameter_value().integer_value
@@ -79,7 +78,11 @@ class Scheduler(Node):
         self.makespan_publisher = self.create_publisher(Float64, "/makespan", 10)
 
         self.graph_publisher: Publisher = self.create_publisher(Image, "/taskgraph")
+
         self.create_timer(2, self.draw_task_graph)
+        self.create_timer(self.interval, self.execute)
+        self.create_timer(1, self.print_active_threads)
+
 
         self.current_tasks: Dict[str, str] = {}
         for node in nodes:
@@ -89,6 +92,9 @@ class Scheduler(Node):
             )
 
         self.get_logger().info("Scheduler node has started!")
+
+    def print_active_threads(self):
+        self.get_logger().info(f"Active Threads: {threading.active_count()}")
 
     def get_bandwidth(self, n1: str, n2: str) -> float:
         now = time.time()
@@ -226,17 +232,6 @@ class Scheduler(Node):
     def cli_success_callback(self, node: str, dt: float, res) -> None:
         self.get_logger().info(f"Response from {node} in {dt} seconds: {res.output}")
 
-    def execute_thread(self) -> None:
-        try:
-            while True:
-                start = time.time()
-                self.execute()
-                time.sleep(max(0, self.interval - (time.time() - start)))
-        except:
-            self.get_logger().error(traceback.format_exc())
-        finally:
-            self.get_logger().error("EXITING SCHEDULER")
-
     def draw_task_graph(self) -> None:
         try:
             start = time.time()
@@ -312,8 +307,6 @@ def main(args=None):
         nodes=all_nodes,
         graph=get_graph()
     )
-    thread = Thread(target=gcn_sched.execute_thread)
-    thread.start()
 
     try:
         rclpy.spin(gcn_sched)
