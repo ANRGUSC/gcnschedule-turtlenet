@@ -38,19 +38,21 @@ class BandwidthNode(Node):
             cli = self.create_client(Bandwidth, f"/{other_node}/ping", callback_group=cb_group)
             cli_timeouter = ClientTimeouter(
                 cli,
-                timeout=2,
+                timeout=4,
                 success_callback=partial(self.publish_ping, pub=pub),
                 error_callback=lambda err: self.get_logger().error(str(err)),
             )
-            
-            while not cli.wait_for_service(timeout_sec=1.0):
+
+            while not cli.wait_for_service(timeout_sec=2.0):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
 
             self.create_timer(interval, partial(self.ping_node, cli_timeouter, pub), callback_group=cb_group)
 
+        self.get_logger().info("Bandwidth node has started!")
+
     def publish_ping(self, dt: float, res, pub: Publisher, *args, **kwargs) -> None:
         try:
-            self.get_logger().info("UNSTUCK")
+            self.get_logger().info("ping service success callback")
             msg = Float64()
             msg.data = (len(PING_MESSAGE.encode("utf-8")) / dt) / 125000
             self.get_logger().info(f"publishing {dt} to {pub.topic}")
@@ -62,18 +64,18 @@ class BandwidthNode(Node):
         self.get_logger().debug("Inside PING NODE")
         req = Bandwidth.Request()
         req.a = PING_MESSAGE
-        self.get_logger().debug("STUCK")
+        self.get_logger().info("calling ping service")
         cli.call(req)
 
-    def ping_callback(self, 
-                      request: Bandwidth.Request, 
+    def ping_callback(self,
+                      request: Bandwidth.Request,
                       response: Bandwidth.Response) -> Bandwidth.Response:
         response.b = request.a
         return response
 
 def main(args=None):
     rclpy.init(args=args)
-    
+
     name = "default-node"
     all_nodes = []
 
@@ -82,7 +84,7 @@ def main(args=None):
         other_nodes=[node for node in all_nodes if node != name],
         interval=5
     )
-    
+
     # executor = MultiThreadedExecutor(num_threads=1000)
     # executor.add_node(bandwidth_client_node)
 
