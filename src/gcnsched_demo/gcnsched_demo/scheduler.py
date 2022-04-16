@@ -68,6 +68,8 @@ class Scheduler(Node):
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
+            if src == dst:
+                continue
             self.create_subscription(
                 Float64, f"/{src}/{dst}/bandwidth",
                 partial(self.bandwidth_callback, src, dst)
