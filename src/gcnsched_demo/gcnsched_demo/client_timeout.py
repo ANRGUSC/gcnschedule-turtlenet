@@ -26,7 +26,10 @@ class ClientTimeouter:
                     fut.cancel()
                     return
                 time.sleep(0.01)
-            self.success_callback(time.time() - start, fut.result())
+            try:
+                self.success_callback(time.time() - start, fut.result())
+            except Exception as e:
+                self.error_callback(e)
         except Exception as e:
             self.error_callback(e)
 
