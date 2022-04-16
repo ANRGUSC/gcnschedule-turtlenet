@@ -10,7 +10,6 @@ from queue import Queue
 from threading import Thread
 
 from .task_graph import TaskGraph, deserialize, get_graph
-
 from std_msgs.msg import String
 
 class ExecutorNode(Node):
@@ -73,7 +72,7 @@ class ExecutorNode(Node):
         return response
 
     def cli_success_callback(self, next_node: str, dt: float, res: Executor.Response, *args, **kwargs) -> None:
-        self.get_logger().debug(f"ACK FROM {next_node}: {res.output}")
+        self.get_logger().info(f"ACK FROM {next_node}: {res.output}")
 
     def proccessing_thread(self) -> None:
         while True:
@@ -150,7 +149,6 @@ class ExecutorNode(Node):
                 else:
                     self.get_logger().info(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
-
 
 def main(args=None):
     rclpy.init(args=args)

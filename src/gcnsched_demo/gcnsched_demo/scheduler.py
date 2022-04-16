@@ -1,4 +1,3 @@
-from asyncio import Future
 from functools import partial
 from pprint import pformat
 from re import I
@@ -9,6 +8,7 @@ from typing import Dict, List, Tuple
 
 import torch
 from heft.core import schedule as schedule_dag
+from .client_timeout import ClientTimeouter
 
 import rclpy
 from rclpy.node import Node, Client, Publisher
@@ -56,8 +56,14 @@ class Scheduler(Node):
             cli = self.create_client(
                 Executor, f'/{node}/executor'
             )
-            self.executor_clients[node] = cli
-            while not cli.wait_for_service(timeout_sec=2.0):
+            cli_timeouter = ClientTimeouter(
+                cli,
+                timeout=2,
+                success_callback=partial(self.cli_success_callback, node),
+                error_callback=lambda err: self.get_logger().error(str(err))
+            )
+            self.executor_clients[node] = cli_timeouter
+            while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service /{node}/executor not available, waiting again...')
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
@@ -103,6 +109,7 @@ class Scheduler(Node):
             msg_data = json.loads(msg.data)
             makespan = Float64()
             makespan.data = time.time() - self.start_times[msg_data["execution_id"]]
+            self.get_logger().info(f"COMPUTED MAKESPAN: {makespan.data}")
             self.makespan_publisher.publish(makespan)
         except:
             self.get_logger().error(traceback.format_exc())
@@ -160,42 +167,40 @@ class Scheduler(Node):
                     task_graph_forward.setdefault(node_dep, [])
                     if node_name not in task_graph_forward[node_dep]:
                         task_graph_forward[node_dep].append(node_name)
+            
+            if self.scheduler == "gcn":
+                sched = find_schedule(
+                    num_of_all_machines=num_machines,
+                    num_node=num_tasks,
+                    input_given_speed=torch.ones(1, num_machines),
+                    input_given_comm=comm,
+                    input_given_comp=comp,
+                    input_given_task_graph=task_graph_forward
+                )
 
+                return {
+                    reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
+                    for task_i, node_i in enumerate(sched)
+                }
+            else:
+                _, jobson = schedule_dag(
+                    task_graph_forward,
+                    agents=self.all_nodes,
+                    compcost=lambda task_id, agent: self.graph.task_names[reverse_task_graph_ids[task_id]].cost,
+                    commcost=lambda t1, t2, a1, a2: 0 if a1 == a2 else 1 / self.get_bandwidth(a1, a2)
+                )
 
-
-            # sched = find_schedule(
-            #     num_of_all_machines=num_machines,
-            #     num_node=num_tasks,
-            #     input_given_speed=torch.ones(1, num_machines),
-            #     input_given_comm=comm,
-            #     input_given_comp=comp,
-            #     input_given_task_graph=task_graph_forward
-            # )
-
-            # return {
-            #     reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
-            #     for task_i, node_i in enumerate(sched)
-            # }
-
-            _, jobson = schedule_dag(
-                task_graph_forward,
-                agents=self.all_nodes,
-                compcost=lambda task_id, agent: self.graph.task_names[reverse_task_graph_ids[task_id]].cost,
-                commcost=lambda t1, t2, a1, a2: 0 if a1 == a2 else 1 / self.get_bandwidth(a1, a2)
-            )
-
-            return {
-                reverse_task_graph_ids[task_id]: agent
-                for task_id, agent in jobson.items()
-            }
-
+                return {
+                    reverse_task_graph_ids[task_id]: agent
+                    for task_id, agent in jobson.items()
+                }
 
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
             self.get_logger().debug("exiting get schedule function")
 
-    def execute(self) -> Tuple[str, List[Future]]:
+    def execute(self) -> None:
         self.get_logger().info(f"\n***********************STARTING NEW EXECUTION************************")
         schedule = self.get_schedule()
         self.current_schedule = deepcopy(schedule)
@@ -209,35 +214,21 @@ class Scheduler(Node):
         })
 
         self.start_times[execution_id] = time.time()
-        futures = []
         for task in self.graph.start_tasks():
             node = schedule[task]
             req = Executor.Request()
             req.input = message
             self.get_logger().info(f"SENDING INITIAL TASK {task} TO {node}")
-            futures.append((node, task, self.executor_clients[node].call_async(req)))
+            task, self.executor_clients[node].call(req)
 
-        return futures
+    def cli_success_callback(self, node: str, dt: float, res) -> None:
+        self.get_logger().info(f"Response from {node} in {dt} seconds: {res.output}")
 
     def execute_thread(self) -> None:
         try:
             while True:
                 start = time.time()
-                futures = self.execute()
-                finished_futures = set()
-                while len(finished_futures) < len(futures):
-                    for node, task, future in futures:
-                        if future.done():
-                            try:
-                                response = future.result()
-                            except Exception as e:
-                                self.get_logger().error('Service call failed %r' % (e,))
-                            else:
-                                self.get_logger().info(f'RES FROM {node}: {response.output}')
-                                finished_futures.add((node, task))
-                        else:
-                            print(f"Future not done for {node} executing {task}")
-                    time.sleep(self.interval / 10)
+                self.execute()
                 time.sleep(max(0, self.interval - (time.time() - start)))
         except:
             self.get_logger().error(traceback.format_exc())

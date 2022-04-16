@@ -5,7 +5,6 @@ import pickle
 
 import inspect
 import time
-from wfcommons.common.workflow import Workflow
 from wfcommons.wfchef.recipes.cycles.recipe import CyclesRecipe
 from wfcommons.wfchef.recipes.montage import MontageRecipe
 from wfcommons.wfchef.recipes.seismology import SeismologyRecipe
@@ -142,7 +141,7 @@ def get_graph() -> TaskGraph:
         runtime = (stats["runtime"]["max"] - stats["runtime"]["min"])/2
 
         if task_type not in task_functions:
-            task_functions[task_type] = partial(fake_execute, task_type, runtime/100)
+            task_functions[task_type] = partial(fake_execute, task_type, runtime/1000)
         
         deps = [
             visited[dep_name] for dep_name, _ in workflow.in_edges(node)
