@@ -11,6 +11,7 @@ from typing import List
 
 from .client_timeout import ClientTimeouter
 
+PING_MESSAGE = "hello"*1000
 class BandwidthNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) -> None:
         super().__init__("bandwidth") #f"{name}_bandwidth")
@@ -52,7 +53,7 @@ class BandwidthNode(Node):
         try:
             self.get_logger().info("UNSTUCK")
             msg = Float64()
-            msg.data = 1 / dt
+            msg.data = (len(PING_MESSAGE.encode("utf-8")) / dt) / 125000
             self.get_logger().info(f"publishing {dt} to {pub.topic}")
             pub.publish(msg)
         except:
@@ -60,9 +61,8 @@ class BandwidthNode(Node):
 
     def ping_node(self, cli: ClientTimeouter, pub: Publisher) -> None:
         self.get_logger().debug("Inside PING NODE")
-        MSG = "hello"
         req = Bandwidth.Request()
-        req.a = MSG
+        req.a = PING_MESSAGE
         self.get_logger().debug("STUCK")
         cli.call(req)
 
