@@ -49,7 +49,7 @@ class ExecutorNode(Node):
                 error_callback=lambda err: self.get_logger().error(str(err)),
             )
             self.executor_clients[other_node] = cli_timeouter
-            while not cli.wait_for_service(timeout_sec=1.0):
+            while not cli.wait_for_service(timeout_sec=2.0):
                 self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
 
         self.publish_current_task = True
@@ -128,7 +128,7 @@ class ExecutorNode(Node):
                 s = String()
                 s.data = json.dumps(
                     {
-                        "status": "done", 
+                        "status": "done",
                         "execution_id": execution_id
                     }
                 )

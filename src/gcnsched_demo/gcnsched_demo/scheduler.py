@@ -57,7 +57,7 @@ class Scheduler(Node):
                 Executor, f'/{node}/executor'
             )
             self.executor_clients[node] = cli
-            while not cli.wait_for_service(timeout_sec=1.0):
+            while not cli.wait_for_service(timeout_sec=2.0):
                 self.get_logger().warning(f'service /{node}/executor not available, waiting again...')
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
@@ -157,7 +157,7 @@ class Scheduler(Node):
                     if node_name not in task_graph_forward[node_dep]:
                         task_graph_forward[node_dep].append(node_name)
 
-            
+
 
             # sched = find_schedule(
             #     num_of_all_machines=num_machines,
@@ -185,7 +185,7 @@ class Scheduler(Node):
                 for task_id, agent in jobson.items()
             }
 
-            
+
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
