@@ -61,6 +61,8 @@ class ExecutorNode(Node):
 
         self.output_publish: Publisher = self.create_publisher(String, "/output")
 
+        self.get_logger().info("Executor node has started!")
+
         thread = Thread(target=self.proccessing_thread)
         thread.start()
 

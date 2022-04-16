@@ -80,10 +80,14 @@ class Scheduler(Node):
                 partial(self.current_task_callback, node)
             )
 
+        self.get_logger().info("Scheduler node has started!")
+
     def get_bandwidth(self, n1: str, n2: str) -> float:
         now = time.time()
         ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
         ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
+        if ptime_1 == 0 and ptime_2 == 0:
+            self.get_logger().info("No bandwidth data available....")
         if ptime_1 > ptime_2:
             bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
         else:
@@ -192,13 +196,7 @@ class Scheduler(Node):
             self.get_logger().debug("exiting get schedule function")
 
     def execute(self) -> Tuple[str, List[Future]]:
-        self.get_logger().info("")
-        self.get_logger().info("")
-        self.get_logger().info("")
-        self.get_logger().info("")
-        self.get_logger().info("")
-        self.get_logger().info("")
-        self.get_logger().info(f"\nSTARTING NEW EXECUTION")
+        self.get_logger().info(f"\n***********************STARTING NEW EXECUTION************************")
         schedule = self.get_schedule()
         self.current_schedule = deepcopy(schedule)
         self.get_logger().info(f"SCHEDULE: {pformat(schedule)}")
