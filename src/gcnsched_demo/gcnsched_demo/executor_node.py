@@ -1,7 +1,8 @@
-import os
+from functools import partial
+from .client_timeout import ClientTimeouter
 from interfaces.srv import Executor
 import rclpy
-from rclpy.node import Node, Client
+from rclpy.node import Node, Client, Publisher
 
 import json
 from typing import Dict, List, Set, Generator, Tuple, Any
@@ -11,7 +12,6 @@ from threading import Thread
 from .task_graph import TaskGraph, deserialize, get_graph
 
 from std_msgs.msg import String
-from rclpy.executors import MultiThreadedExecutor
 
 class ExecutorNode(Node):
     def __init__(self,
@@ -24,9 +24,6 @@ class ExecutorNode(Node):
         self.declare_parameter('other_nodes', [])
         name = self.get_parameter('name').get_parameter_value().string_value
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
-
-
-
 
         self.name = name
         self.graph = graph
@@ -45,7 +42,13 @@ class ExecutorNode(Node):
             cli = self.create_client(
                 Executor, f'/{other_node}/executor'
             )
-            self.executor_clients[other_node] = cli
+            cli_timeouter = ClientTimeouter(
+                cli,
+                timeout=2,
+                success_callback=partial(self.cli_success_callback, other_node),
+                error_callback=lambda err: self.get_logger().error(str(err)),
+            )
+            self.executor_clients[other_node] = cli_timeouter
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
 
@@ -67,14 +70,16 @@ class ExecutorNode(Node):
         self.get_logger().info("SENDING ACK")
         return response
 
+    def cli_success_callback(self, next_node: str, dt: float, res: Executor.Response, *args, **kwargs) -> None:
+        self.get_logger().debug(f"ACK FROM {next_node}: {res.output}")
+
     def proccessing_thread(self) -> None:
         while True:
             msg = self.queue.get()
             for next_node, out_msg in self.process_message(msg):
                 req = Executor.Request()
                 req.input = out_msg
-                res = self.executor_clients[next_node].call(req)
-                self.get_logger().debug(f"ACK FROM {next_node}: {res.output}")
+                self.executor_clients[next_node].call(req)
 
     def process_message(self, msg_str: str) -> Generator[Tuple[str, str], None, None]:
         msg: Dict[str, Any] = json.loads(msg_str)

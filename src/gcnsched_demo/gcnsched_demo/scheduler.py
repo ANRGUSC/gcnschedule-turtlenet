@@ -8,7 +8,7 @@ import traceback
 from typing import Dict, List, Tuple
 
 import torch
-
+from heft.core import schedule as schedule_dag
 
 import rclpy
 from rclpy.node import Node, Client, Publisher
@@ -34,18 +34,18 @@ from cv_bridge import CvBridge
 class Scheduler(Node):
     def __init__(self,
                  nodes: List[str],
-                 graph: TaskGraph,
-                 interval: int) -> None:
+                 graph: TaskGraph) -> None:
         super().__init__('scheduler')
         #getting parameters from the launch file
         self.declare_parameter('nodes', [])
         self.declare_parameter('interval', 10)
+        self.declare_parameter('scheduler', "heft")
         nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
-        interval = self.get_parameter('interval').get_parameter_value().integer_value
+        self.scheduler = self.get_parameter('scheduler').get_parameter_value().string_value
+        self.interval = self.get_parameter('interval').get_parameter_value().integer_value
 
         self.get_logger().info("SCHEDULER INIT")
         self.graph = graph
-        self.interval = interval
         self.all_nodes = nodes
 
         self.current_schedule = {}
@@ -148,19 +148,35 @@ class Scheduler(Node):
                     if node_name not in task_graph_forward[node_dep]:
                         task_graph_forward[node_dep].append(node_name)
 
-            schedule = find_schedule(
-                num_of_all_machines=num_machines,
-                num_node=num_tasks,
-                input_given_speed=torch.ones(1, num_machines),
-                input_given_comm=comm,
-                input_given_comp=comp,
-                input_given_task_graph=task_graph_forward
+            
+
+            # sched = find_schedule(
+            #     num_of_all_machines=num_machines,
+            #     num_node=num_tasks,
+            #     input_given_speed=torch.ones(1, num_machines),
+            #     input_given_comm=comm,
+            #     input_given_comp=comp,
+            #     input_given_task_graph=task_graph_forward
+            # )
+
+            # return {
+            #     reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
+            #     for task_i, node_i in enumerate(sched)
+            # }
+
+            _, jobson = schedule_dag(
+                task_graph_forward,
+                agents=self.all_nodes,
+                compcost=lambda task_id, agent: self.graph.task_names[reverse_task_graph_ids[task_id]].cost,
+                commcost=lambda t1, t2, a1, a2: 0 if a1 == a2 else 1 / self.get_bandwidth(a1, a2)
             )
 
             return {
-                reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
-                for task_i, node_i in enumerate(schedule)
+                reverse_task_graph_ids[task_id]: agent
+                for task_id, agent in jobson.items()
             }
+
+            
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
@@ -215,7 +231,7 @@ class Scheduler(Node):
         finally:
             self.get_logger().error("EXITING SCHEDULER")
 
-    async def draw_task_graph(self) -> None:
+    def draw_task_graph(self) -> None:
         try:
             start = time.time()
             self.get_logger().info("Drawing taskgraph")
@@ -279,7 +295,7 @@ class Scheduler(Node):
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
-            self.get_logger().error(f"leaving task graph drawer")
+            self.get_logger().info(f"leaving task graph drawer")
 
 def main(args=None):
     rclpy.init(args=args)
@@ -288,8 +304,7 @@ def main(args=None):
 
     gcn_sched = Scheduler(
         nodes=all_nodes,
-        graph=get_graph(),
-        interval=10
+        graph=get_graph()
     )
     thread = Thread(target=gcn_sched.execute_thread)
     thread.start()

@@ -1,17 +1,15 @@
-import asyncio
+import traceback
 from interfaces.srv import Bandwidth
 from std_msgs.msg import Float64
 import rclpy
 from rclpy.node import Node, Client, Publisher
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
 import time
 from functools import partial
 from typing import List
-import os
-from rclpy.exceptions import ParameterNotDeclaredException
-from rcl_interfaces.msg import ParameterType
 
+
+from .client_timeout import ClientTimeouter
 
 class BandwidthNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) -> None:
@@ -35,29 +33,38 @@ class BandwidthNode(Node):
 
         self.name = name
         for other_node in other_nodes:
-            cli = self.create_client(Bandwidth, f"/{other_node}/ping", callback_group=cb_group)
             pub = self.create_publisher(Float64, f"{other_node}/bandwidth", 10, callback_group=cb_group)
+
+            cli = self.create_client(Bandwidth, f"/{other_node}/ping", callback_group=cb_group)
+            cli_timeouter = ClientTimeouter(
+                cli,
+                timeout=2,
+                success_callback=partial(self.publish_ping, pub=pub),
+                error_callback=lambda err: self.get_logger().error(str(err)),
+            )
+            
             while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
-            self.create_timer(interval, partial(self.ping_node, cli, pub), callback_group=cb_group)
 
-    def publish_ping(self, start: float, pub: Publisher, *args, **kwargs) -> None:
-        self.get_logger().debug("UNSTUCK")
-        dt = time.time() - start
-        msg = Float64()
-        msg.data = 1 / dt
-        self.get_logger().debug("publishing")
-        pub.publish(msg)
+            self.create_timer(interval, partial(self.ping_node, cli_timeouter, pub), callback_group=cb_group)
 
-    def ping_node(self, cli: Client, pub: Publisher) -> None:
+    def publish_ping(self, dt: float, res, pub: Publisher, *args, **kwargs) -> None:
+        try:
+            self.get_logger().info("UNSTUCK")
+            msg = Float64()
+            msg.data = 1 / dt
+            self.get_logger().info(f"publishing {dt} to {pub.topic}")
+            pub.publish(msg)
+        except:
+            self.get_logger().error(traceback.format_exc())
+
+    def ping_node(self, cli: ClientTimeouter, pub: Publisher) -> None:
         self.get_logger().debug("Inside PING NODE")
         MSG = "hello"        
         req = Bandwidth.Request()
         req.a = MSG
-        start = time.time()
         self.get_logger().debug("STUCK")
-        fut = cli.call_async(req)
-        fut.add_done_callback(partial(self.publish_ping, start, pub))
+        cli.call(req)
 
     def ping_callback(self, 
                       request: Bandwidth.Request, 

@@ -10,4 +10,5 @@ RUN pip3 install matplotlib networkx torch \
 
 RUN apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config \
     && pip3 install graphviz pygraphviz
+RUN pip3 install git+https://github.com/ANRGUSC/heft.git
 WORKDIR /workspace 
