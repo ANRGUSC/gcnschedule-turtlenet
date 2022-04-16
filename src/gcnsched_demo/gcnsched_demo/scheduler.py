@@ -111,6 +111,9 @@ class Scheduler(Node):
             num_machines = len(self.all_nodes)
             num_tasks = len(self.graph.task_names)
 
+            self.get_logger().info(f"{num_machines} machines")
+            self.get_logger().info(f"{num_tasks} tasks")
+
             task_graph_ids = {
                 task: i
                 for i, task in enumerate(self.graph.task_names)
@@ -134,12 +137,18 @@ class Scheduler(Node):
                 for i in range(num_machines)
             ])
 
+            self.get_logger().info("COMM:")
+            self.get_logger().info(str(comm))
+
             comp = torch.Tensor([
                 [
                     self.graph.task_names[reverse_task_graph_ids[i]].cost
                     for i in range(num_tasks)
                 ]
             ])
+
+            self.get_logger().info("COMP:")
+            self.get_logger().info(str(comp))
 
             task_graph_forward: Dict[int, List[int]] = {}
             for node_name, node_deps in task_graph.items():
@@ -167,6 +176,12 @@ class Scheduler(Node):
             self.get_logger().debug("exiting get schedule function")
 
     def execute(self) -> Tuple[str, List[Future]]:
+        self.get_logger().info("")
+        self.get_logger().info("")
+        self.get_logger().info("")
+        self.get_logger().info("")
+        self.get_logger().info("")
+        self.get_logger().info("")
         self.get_logger().info(f"\nSTARTING NEW EXECUTION")
         schedule = self.get_schedule()
         self.current_schedule = deepcopy(schedule)
@@ -232,7 +247,7 @@ class Scheduler(Node):
             }
             self.get_logger().info("types "+str(types))
             self.get_logger().info("nodes "+str(self.all_nodes))
-            
+
             current_schedule = deepcopy(self.current_schedule)
             {node: task for task, node in current_schedule.items()}
             node_color = [
@@ -248,7 +263,7 @@ class Scheduler(Node):
                 graph, pos, edge_color='black', width=1, linewidths=1,
                 node_size=200, node_color=node_color, alpha=0.8,
                 labels=labels_dict,
-                with_labels = False, 
+                with_labels = False,
                 font_weight = 'bold',
                 font_size=8,
                 cmap=cmap,vmin=0,vmax=len(self.all_nodes)

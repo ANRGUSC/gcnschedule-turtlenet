@@ -68,7 +68,7 @@ class Visualizer(Node):
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
-        
+
     def get_bandwidth(self, n1: str, n2: str) -> float:
         now = time.time()
         ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
@@ -81,13 +81,13 @@ class Visualizer(Node):
         return bandwidth + 1e-9
 
     def draw_network(self) -> None:
-        self.get_logger().info("Bandwidths:"+pformat(self.bandwidths))
+        # self.get_logger().info("Bandwidths:"+pformat(self.bandwidths))
         self.get_logger().info("Assignment:"+pformat(self.current_tasks))
 
         graph = nx.Graph()
         # bandwidths = deepcopy(self.bandwidths)
         self.get_logger().info("STARTING add weights")
-        
+
         # bandwidth_set = set()
         # updated_bandwidth = {}
         # for src,dst in bandwidths.keys():
@@ -95,7 +95,7 @@ class Visualizer(Node):
         #         continue
         #     else:
         #         bandwidth_set.add((src,dst))
-        # #updating the bandwidths 
+        # #updating the bandwidths
         # for src,dst in bandwidth_set:
         #     updated_bandwidth[(src,dst)] = round(min(bandwidths[(src,dst)], bandwidths[(dst,src)]),2)
 
@@ -104,10 +104,11 @@ class Visualizer(Node):
             (src, dst): f"{self.get_bandwidth(src, dst):0.2f}"
             for src, dst in product(self.all_nodes, self.all_nodes)
         }
+        self.get_logger().info(pformat(edge_labels))
         graph.add_weighted_edges_from(
             [(src, dst, bw) for (src, dst), bw in edge_labels.items()]
         )
-       
+
         pos = nx.planar_layout(graph)
         fig = plt.figure()
         nx.draw(
