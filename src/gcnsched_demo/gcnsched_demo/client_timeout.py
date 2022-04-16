@@ -2,8 +2,7 @@ import time
 import threading
 from typing import Any, Callable
 
-from rclpy.node import Client
-
+from rclpy.node import Client, get_logger
 
 class ClientTimeouter:
     def __init__(self, 
@@ -19,6 +18,7 @@ class ClientTimeouter:
     def _call_thread(self, req):
         try:
             start = time.time()
+            get_logger("ClientTimeouter").info(f"****Calling service {self.cli.srv_name}****")
             fut = self.cli.call_async(req)
             while not fut.done():
                 if time.time() - start > self.timeout:
