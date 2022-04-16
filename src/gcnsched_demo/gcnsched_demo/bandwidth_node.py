@@ -11,7 +11,7 @@ from typing import List
 
 from .client_timeout import ClientTimeouter
 
-PING_MESSAGE = "hello"*1000
+PING_MESSAGE = "hello"*10
 class BandwidthNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) -> None:
         super().__init__("bandwidth") #f"{name}_bandwidth")

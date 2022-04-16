@@ -21,11 +21,11 @@ class ClientTimeouter:
             start = time.time()
             fut = self.cli.call_async(req)
             while not fut.done():
-                time.sleep(0.001)
                 if time.time() - start > self.timeout:
                     self.error_callback(TimeoutError(f"Timeout calling {self.cli.srv_name}!"))
                     fut.cancel()
                     return
+                time.sleep(0.01)
             self.success_callback(time.time() - start, fut.result())
         except Exception as e:
             self.error_callback(e)

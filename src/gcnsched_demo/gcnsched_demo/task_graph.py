@@ -142,7 +142,7 @@ def get_graph() -> TaskGraph:
         runtime = (stats["runtime"]["max"] - stats["runtime"]["min"])/2
 
         if task_type not in task_functions:
-            task_functions[task_type] = partial(fake_execute, task_type, runtime/100)
+            task_functions[task_type] = partial(fake_execute, task_type, runtime/1000)
         
         deps = [
             visited[dep_name] for dep_name, _ in workflow.in_edges(node)
