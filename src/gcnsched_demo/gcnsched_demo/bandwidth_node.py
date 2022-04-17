@@ -46,7 +46,7 @@ class BandwidthNode(Node):
         dt = time.time() - start
         self.get_logger().info(f'TIME For Ping service:{dt}')
         msg = Float64()
-        msg.data = req_length / dt # take message size into account
+        msg.data = (req_length / dt)/125 # take message size into account
         self.get_logger().info("publishing")
         pub.publish(msg)
 
@@ -55,9 +55,9 @@ class BandwidthNode(Node):
         MSG = "hello"*1000
         req_length = len(MSG.encode("utf-8"))
         req = Bandwidth.Request()
-        req.a = MSG        
+        req.a = MSG
         self.get_logger().info("STUCK")
-        #TODO: fix the wait for service 
+        #TODO: fix the wait for service
         temp_start = time.time()
         if cli.wait_for_service(timeout_sec=self.interval/2):
             self.get_logger().info(f'Time until service is ready: {(time.time() - temp_start)}')

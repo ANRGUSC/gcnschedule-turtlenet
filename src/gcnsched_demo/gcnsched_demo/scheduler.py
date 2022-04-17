@@ -40,8 +40,10 @@ class Scheduler(Node):
         #getting parameters from the launch file
         self.declare_parameter('nodes', [])
         self.declare_parameter('interval', 10)
+        self.declare_parameter('scheduler', 'gcn')
         nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
         interval = self.get_parameter('interval').get_parameter_value().integer_value
+        self.scheduler = self.get_parameter('scheduler').get_parameter_value().string_value
 
         self.get_logger().info("SCHEDULER INIT")
         self.graph = graph
@@ -105,16 +107,21 @@ class Scheduler(Node):
 
     def get_schedule(self) -> Dict[str, str]:
         try:
-            num_machines = len(self.all_nodes)
+            machines = [
+                node for node in self.all_nodes if not all([
+                    self.get_bandwidth(node, other) <= 1e-3
+                    for other in (set(self.all_nodes).difference({node}))
+                ])
+            ]
+            num_machines = len(machines)
             num_tasks = len(self.graph.task_names)
-
+            self.get_logger().info(f"{num_machines} machines")
+            self.get_logger().info(f"{num_tasks} tasks")
             task_graph_ids = {
                 task: i
                 for i, task in enumerate(self.graph.task_names)
             }
-
             reverse_task_graph_ids = {v: k for k, v in task_graph_ids.items()}
-
             task_graph = {
                 task_graph_ids[task.name]: [
                     task_graph_ids[dep.name]
@@ -122,42 +129,53 @@ class Scheduler(Node):
                 ]
                 for task, deps in self.graph.task_deps.items()
             }
-
             comm = torch.Tensor([
                 [
-                    0 if i == j else min(1e9, 1 / self.get_bandwidth(self.all_nodes[i], self.all_nodes[j]))
+                    0 if i == j else min(1e9, 1 / self.get_bandwidth(machines[i], machines[j]))
                     for j in range(num_machines)
                 ]
                 for i in range(num_machines)
             ])
-
+            self.get_logger().info("COMM:")
+            self.get_logger().info(str(comm))
             comp = torch.Tensor([
                 [
                     self.graph.task_names[reverse_task_graph_ids[i]].cost
                     for i in range(num_tasks)
                 ]
             ])
-
+            self.get_logger().info("COMP:")
+            self.get_logger().info(str(comp))
             task_graph_forward: Dict[int, List[int]] = {}
             for node_name, node_deps in task_graph.items():
                 for node_dep in node_deps:
                     task_graph_forward.setdefault(node_dep, [])
                     if node_name not in task_graph_forward[node_dep]:
                         task_graph_forward[node_dep].append(node_name)
-
-            schedule = find_schedule(
-                num_of_all_machines=num_machines,
-                num_node=num_tasks,
-                input_given_speed=torch.ones(1, num_machines),
-                input_given_comm=comm,
-                input_given_comp=comp,
-                input_given_task_graph=task_graph_forward
-            )
-
-            return {
-                reverse_task_graph_ids[task_i]: self.all_nodes[node_i.item()]
-                for task_i, node_i in enumerate(schedule)
-            }
+            if self.scheduler == "gcn":
+                sched = find_schedule(
+                    num_of_all_machines=num_machines,
+                    num_node=num_tasks,
+                    input_given_speed=torch.ones(1, num_machines),
+                    input_given_comm=comm,
+                    input_given_comp=comp,
+                    input_given_task_graph=task_graph_forward
+                )
+                return {
+                    reverse_task_graph_ids[task_i]: machines[node_i.item()]
+                    for task_i, node_i in enumerate(sched)
+                }
+            else:
+                _, jobson = schedule_dag(
+                    task_graph_forward,
+                    agents=machines,
+                    compcost=lambda task_id, agent: self.graph.task_names[reverse_task_graph_ids[task_id]].cost,
+                    commcost=lambda t1, t2, a1, a2: 0 if a1 == a2 else 1 / self.get_bandwidth(a1, a2)
+                )
+                return {
+                    reverse_task_graph_ids[task_id]: agent
+                    for task_id, agent in jobson.items()
+                }
         except:
             self.get_logger().error(traceback.format_exc())
         finally:
