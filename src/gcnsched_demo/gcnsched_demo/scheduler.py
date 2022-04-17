@@ -51,14 +51,9 @@ class Scheduler(Node):
         self.current_schedule = {}
         self.start_times = {}
 
-        self.executor_clients: Dict[str, Client] = {}
+        self.executor_topics = {}
         for node in nodes:
-            cli = self.create_client(
-                Executor, f'/{node}/executor'
-            )
-            self.executor_clients[node] = cli
-            while not cli.wait_for_service(timeout_sec=1.0):
-                self.get_logger().warning(f'service /{node}/executor not available, waiting again...')
+            self.executor_topics[node] = self.create_publisher(String, f"/{node}/executor")
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
@@ -79,6 +74,8 @@ class Scheduler(Node):
                 String, f"/{node}/current_task",
                 partial(self.current_task_callback, node)
             )
+
+        self.create_timer(self.interval, self.execute)
 
     def get_bandwidth(self, n1: str, n2: str) -> float:
         now = time.time()
@@ -180,40 +177,12 @@ class Scheduler(Node):
         })
 
         self.start_times[execution_id] = time.time()
-        futures = []
         for task in self.graph.start_tasks():
             node = schedule[task]
-            req = Executor.Request()
-            req.input = message
+            msg = String()
+            msg.data = message
             self.get_logger().info(f"SENDING INITIAL TASK {task} TO {node}")
-            futures.append((node, task, self.executor_clients[node].call_async(req)))
-
-        return futures
-
-    def execute_thread(self) -> None:
-        try:
-            while True:
-                start = time.time()
-                futures = self.execute()
-                finished_futures = set()
-                while len(finished_futures) < len(futures):
-                    for node, task, future in futures:
-                        if future.done():
-                            try:
-                                response = future.result()
-                            except Exception as e:
-                                self.get_logger().error('Service call failed %r' % (e,))
-                            else:
-                                self.get_logger().info(f'RES FROM {node}: {response.output}')
-                                finished_futures.add((node, task))
-                        else:
-                            print(f"Future not done for {node} executing {task}")
-                    time.sleep(self.interval / 10)
-                time.sleep(max(0, self.interval - (time.time() - start)))
-        except:
-            self.get_logger().error(traceback.format_exc())
-        finally:
-            self.get_logger().error("EXITING SCHEDULER")
+            self.executor_topics[node].publish(msg)
 
     async def draw_task_graph(self) -> None:
         try:
@@ -235,9 +204,12 @@ class Scheduler(Node):
 
             current_schedule = deepcopy(self.current_schedule)
             {node: task for task, node in current_schedule.items()}
-            node_color = [
-                types[current_schedule[node]] for node in graph.nodes
-            ]
+            try:
+                node_color = [
+                    types[current_schedule[node]] for node in graph.nodes
+                ]
+            except:
+                return
             self.get_logger().info("color "+str(node_color))
             cmap = cm.get_cmap('gist_rainbow', len(self.all_nodes))
             labels_dict = dict([(node_name, node_name.split("_")[0][:7]) for node_name in graph.nodes])
@@ -291,13 +263,10 @@ def main(args=None):
         graph=get_graph(),
         interval=10
     )
-    thread = Thread(target=gcn_sched.execute_thread)
-    thread.start()
 
     try:
         rclpy.spin(gcn_sched)
     finally:
-        thread.join()
         gcn_sched.destroy_node()
         rclpy.shutdown()
 
