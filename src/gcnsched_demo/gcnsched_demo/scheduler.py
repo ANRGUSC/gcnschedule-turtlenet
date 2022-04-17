@@ -114,6 +114,9 @@ class Scheduler(Node):
                 ])
             ]
             num_machines = len(machines)
+            if not num_machines:
+                return None
+
             num_tasks = len(self.graph.task_names)
             self.get_logger().info(f"{num_machines} machines")
             self.get_logger().info(f"{num_tasks} tasks")
@@ -184,6 +187,8 @@ class Scheduler(Node):
     def execute(self) -> Tuple[str, List[Future]]:
         self.get_logger().info(f"\nSTARTING NEW EXECUTION")
         schedule = self.get_schedule()
+        if not schedule:
+            return
         self.current_schedule = deepcopy(schedule)
         self.get_logger().info(f"SCHEDULE: {pformat(schedule)}")
         execution_id = uuid4().hex
