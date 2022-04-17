@@ -37,11 +37,18 @@ class ExecutorNode(Node):
         )
 
         self.executor_clients: Dict[str, Client] = {}
+        self.clis = {}
         for other_node in other_nodes:
             # self.executor_clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
             cli = self.create_client(
                 Executor, f'/{other_node}/executor'
             )
+            self.clis[other_node] = cli
+            while not cli.wait_for_service(timeout_sec=2.0):
+                self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
+
+        for other_node in other_nodes:
+            cli = self.clis[other_node]
             cli_timeouter = ClientTimeouter(
                 cli,
                 timeout=2,
@@ -49,8 +56,6 @@ class ExecutorNode(Node):
                 error_callback=lambda err: self.get_logger().error(str(err)),
             )
             self.executor_clients[other_node] = cli_timeouter
-            while not cli.wait_for_service(timeout_sec=2.0):
-                self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
 
         self.publish_current_task = True
         if self.publish_current_task:
