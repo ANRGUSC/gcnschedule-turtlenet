@@ -22,12 +22,15 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 
 find_package(rosidl_default_generators REQUIRED)
+find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Num.msg"
+  "msg/StringStamped.msg"
   "srv/AddThreeInts.srv"
   "srv/Bandwidth.srv"
   "srv/Executor.srv"
+  DEPENDENCIES builtin_interfaces std_msgs
  )
 
 if(BUILD_TESTING)
