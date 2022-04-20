@@ -234,7 +234,7 @@ class Scheduler(Node):
             except:
                 return
             self.get_logger().info("color "+str(node_color))
-            cmap = cm.get_cmap('gist_rainbow', len(self.all_nodes))
+            cmap = cm.get_cmap('Dark2', len(self.all_nodes))
             labels_dict = dict([(node_name, node_name.split("_")[0][:7]) for node_name in graph.nodes])
 
             pos = nx.nx_agraph.graphviz_layout(graph,prog='dot')

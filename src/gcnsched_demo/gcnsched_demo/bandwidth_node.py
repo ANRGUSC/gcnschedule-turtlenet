@@ -14,10 +14,13 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rcl_interfaces.msg import ParameterType
 from rclpy.time import Time
 
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from rclpy.qos import QoSProfile
+
 class BandwidthNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) -> None:
         super().__init__("bandwidth") #f"{name}_bandwidth")
-        self.PING_MSG = "hello"
+        self.PING_MSG = "hello"*100
 
         self.declare_parameter('name', 'default_node')
         self.declare_parameter('other_nodes',[])
@@ -33,12 +36,18 @@ class BandwidthNode(Node):
         self.request_topics = {}
         self.response_topics = {}
         self.publish_topics = {}
+
+        self.qos_profile = QoSProfile(depth=1)
+        self.qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
+        self.qos_profile.history = QoSHistoryPolicy.KEEP_LAST
+        self.qos_profile.durability = QoSDurabilityPolicy.VOLATILE
+
         for other_node in self.other_nodes:
-            self.create_subscription(StringStamped, f"/{other_node}/{my_ns}/ping",partial(self.send_reply, other_node, my_ns))
-            self.create_subscription(StringStamped, f"/{my_ns}/{other_node}/reply",partial(self.publish_metric, other_node, my_ns))
-            self.request_topics[other_node] = self.create_publisher(StringStamped, f"/{my_ns}/{other_node}/ping")
-            self.response_topics[other_node] = self.create_publisher(StringStamped, f"/{other_node}/{my_ns}/reply")
-            self.publish_topics[other_node] = self.create_publisher(Float64, f"/{my_ns}/{other_node}/bandwidth")
+            self.create_subscription(StringStamped, f"/{other_node}/{my_ns}/ping",partial(self.send_reply, other_node, my_ns),self.qos_profile)
+            self.create_subscription(StringStamped, f"/{my_ns}/{other_node}/reply",partial(self.publish_metric, other_node, my_ns),self.qos_profile)
+            self.request_topics[other_node] = self.create_publisher(StringStamped, f"/{my_ns}/{other_node}/ping", self.qos_profile)
+            self.response_topics[other_node] = self.create_publisher(StringStamped, f"/{other_node}/{my_ns}/reply", self.qos_profile)
+            self.publish_topics[other_node] = self.create_publisher(Float64, f"/{my_ns}/{other_node}/bandwidth", self.qos_profile)
 
         self.create_timer(interval, self.ping_node)
 
