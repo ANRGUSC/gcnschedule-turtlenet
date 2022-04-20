@@ -47,7 +47,7 @@ class BandwidthNode(Node):
             self.create_subscription(StringStamped, f"/{my_ns}/{other_node}/reply",partial(self.publish_metric, other_node, my_ns),self.qos_profile)
             self.request_topics[other_node] = self.create_publisher(StringStamped, f"/{my_ns}/{other_node}/ping", self.qos_profile)
             self.response_topics[other_node] = self.create_publisher(StringStamped, f"/{other_node}/{my_ns}/reply", self.qos_profile)
-            self.publish_topics[other_node] = self.create_publisher(Float64, f"/{my_ns}/{other_node}/bandwidth", self.qos_profile)
+            self.publish_topics[other_node] = self.create_publisher(Float64, f"/{my_ns}/{other_node}/bandwidth")
 
         self.create_timer(interval, self.ping_node)
 
@@ -72,7 +72,7 @@ class BandwidthNode(Node):
         self.get_logger().info(str(msg.header.stamp))
         dt =  self.get_clock().now() - Time.from_msg(msg.header.stamp)
         dt_secs = dt.nanoseconds/1e9
-        self.get_logger().info(f'TIME For Ping roundtrip:{dt_secs}')
+        self.get_logger().info(f'TIME For Ping {my_ns} to {other_node}roundtrip:{dt_secs}')
         f = Float64()
         req_length = len(self.PING_MSG.encode("utf-8"))
         f.data = (req_length / dt_secs)/125

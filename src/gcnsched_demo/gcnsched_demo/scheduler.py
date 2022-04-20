@@ -87,7 +87,8 @@ class Scheduler(Node):
             bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
         else:
             bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
-
+        if bandwidth == 0:
+            self.get_logger().info(f"Bandwidth timeout {n1} {n2}")
         return bandwidth + 1e-9
 
     def current_task_callback(self, node: str, msg: String) -> None:
@@ -103,6 +104,7 @@ class Scheduler(Node):
             self.get_logger().error(traceback.format_exc())
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
+        self.get_logger().info(f"Bandwidth callback {src} to {dst}")
         self.bandwidths[(src, dst)] = time.time(), msg.data
 
     def get_schedule(self) -> Dict[str, str]:
