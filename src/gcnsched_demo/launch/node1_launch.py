@@ -19,15 +19,15 @@ def generate_launch_description():
             ],
             # arguments=[('__log_level:=debug')]
         ),
-        Node(
-            package='gcnsched_demo',
-            node_executable='executor',
-            node_name='executor',
-            node_namespace=node_name,
-            prefix=['stdbuf -o L'],
-            output='screen',
-            parameters=[
-                {'name': node_name, 'other_nodes': other_nodes, }
-            ]
-        )
+        # Node(
+        #     package='gcnsched_demo',
+        #     node_executable='executor',
+        #     node_name='executor',
+        #     node_namespace=node_name,
+        #     prefix=['stdbuf -o L'],
+        #     output='screen',
+        #     parameters=[
+        #         {'name': node_name, 'other_nodes': other_nodes, }
+        #     ]
+        # )
     ])
