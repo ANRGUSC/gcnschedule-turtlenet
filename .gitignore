@@ -23,6 +23,9 @@ __pycache__/
 # C extensions
 *.so
 
+# tmux
+src/gcnsched_demo/tmuxp_config/test_schedule.yaml
+
 # Distribution / packaging
 .Python
 build/
