@@ -1,0 +1,20 @@
+session_name: scheduler_and_rosboard
+# environment:
+
+options:
+  default-command: /bin/bash
+
+windows:
+- window_name: test_schedule
+  focus: true
+  layout: tiled
+  shell_command_before:
+     # - source /opt/ros/dashing/setup.bash
+     - export ROS_DOMAIN_ID=30
+     - . install/setup.bash
+  panes:
+    - shell_command:
+        - ros2 launch gcnsched_demo sched_launch.py #> add_test_name.txt
+    - shell_command:
+        # - ros2 run rqt_image_view rqt_image_view
+        - ros2 run rosboard rosboard_node

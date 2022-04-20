@@ -284,7 +284,7 @@ def main(args=None):
     gcn_sched = Scheduler(
         nodes=all_nodes,
         graph=get_graph(),
-        interval=10
+        interval=15
     )
 
     try:
