@@ -7,17 +7,17 @@ nodes = ['node1', 'node2', 'node3', 'node4']
 
 def generate_launch_description():
     return LaunchDescription([
-        Node(
-            package='gcnsched_demo',
-            node_executable='scheduler',
-            # node_name=node_name,
-            # node_namespace=node_name,
-            prefix=['stdbuf -o L'],
-            output='screen',
-            parameters=[
-                {'nodes': nodes }
-            ]
-        ),
+        # Node(
+        #     package='gcnsched_demo',
+        #     node_executable='scheduler',
+        #     # node_name=node_name,
+        #     # node_namespace=node_name,
+        #     prefix=['stdbuf -o L'],
+        #     output='screen',
+        #     parameters=[
+        #         {'nodes': nodes }
+        #     ]
+        # ),
         Node(
             package='gcnsched_demo',
             node_executable='visualizer',
