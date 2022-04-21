@@ -48,29 +48,29 @@ class PingNode(Node):
         avgValues = {}
         start = time.time()
         self.get_logger().info("In timer callback")
-        # for ip in self.IPList:
-        #     result = subprocess.run(
-        #     # Command as a list, to avoid shell=True
-        #     ['ping', '-c', str(self.numPings),'-s','1000', ip],
-        #     stdout=PIPE
-        #     )
-        #     avgValues[ip] = 0
-        #     for line in result.stdout.splitlines():
-        #         line = line.decode("utf-8")
-        #         if "icmp_seq" in line:                    
-        #             timing = line.split('time=')[-1].split(' ms')[0]
-        #             try:
-        #                 avgValues[ip] += float(timing)
-        #             except ValueError:
-        #                 self.get_logger.info('Failed Ping')
-        #                 # print("Failed Ping")
-        #             except Exception as ex:
-        #                 self.get_logger.info(f'Exception: {type(ex).__name__}')
-        # time_taken = time.time() - start
-        # print("Time taken ", time_taken)
-        # for ip in avgValues:
-        #     self.get_logger.info(f'{ip} {avgValues[ip]/self.numPings}')
-            # print(ip, avgValues[ip]/self.numPings)
+        for ip in self.IPList:
+            result = subprocess.run(
+            # Command as a list, to avoid shell=True
+            ['ping', '-c', str(self.numPings),'-s','1000', ip],
+            stdout=PIPE
+            )
+            avgValues[ip] = 0
+            for line in result.stdout.splitlines():
+                line = line.decode("utf-8")
+                if "icmp_seq" in line:                    
+                    timing = line.split('time=')[-1].split(' ms')[0]
+                    try:
+                        avgValues[ip] += float(timing)
+                    except ValueError:
+                        self.get_logger.info('Failed Ping')
+                        # print("Failed Ping")
+                    except Exception as ex:
+                        self.get_logger.info(f'Exception: {type(ex).__name__}')
+        time_taken = time.time() - start
+        print("Time taken ", time_taken)
+        for ip in avgValues:
+            self.get_logger.info(f'{ip} {avgValues[ip]/self.numPings}')
+            print(ip, avgValues[ip]/self.numPings)
         # TODO: Add publishing code here
 
 
