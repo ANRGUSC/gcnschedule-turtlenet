@@ -45,8 +45,8 @@ class PingNode(Node):
             self.IPList = [ip for ip in adhoc_ip if name[-1] != ip[-1] ]
 
         self.get_logger().info(f'{self.IPList}')
-        for other_node in other_nodes:
-            self.pubDict[other_node] = self.create_publisher(Float64, f'/{other_node}/delay',10, callback_group=cb_group)
+        for index, other_node in enumerate(other_nodes):
+            self.pubDict[self.IPList[index]] = self.create_publisher(Float64, f'/{other_node}/delay',10, callback_group=cb_group)
         self.create_timer(self.interval, self.timer_callback)
         # self.create_timer(timer_period, self.timer_callback)
 
@@ -77,6 +77,9 @@ class PingNode(Node):
         for ip in avgValues:
             self.get_logger().info(f'{ip} {avgValues[ip]/self.numPings}')
             print(ip, avgValues[ip]/self.numPings)
+            msg = Float64()
+            msg.data = avgValues[ip]/self.numPings
+            self.pubDict[ip].publish(msg)
         # TODO: Add publishing code here
 
 
