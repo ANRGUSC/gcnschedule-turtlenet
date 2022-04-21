@@ -72,7 +72,7 @@ class BandwidthNode(Node):
         self.get_logger().info(str(msg.header.stamp))
         dt =  self.get_clock().now() - Time.from_msg(msg.header.stamp)
         dt_secs = dt.nanoseconds/1e9
-        self.get_logger().info(f'TIME For Ping {my_ns} to {other_node}roundtrip:{dt_secs}')
+        self.get_logger().info(f'TIME For Ping {my_ns} to {other_node} roundtrip:{dt_secs}')
         f = Float64()
         req_length = len(self.PING_MSG.encode("utf-8"))
         f.data = (req_length / dt_secs)/125

@@ -64,12 +64,14 @@ class Visualizer(Node):
             )
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
+        self.get_logger().info(f"Bandwidth callback {src} to {dst}")
         self.bandwidths[(src, dst)] = time.time(), msg.data
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
-        
+
     def get_bandwidth(self, n1: str, n2: str) -> float:
+        # return 1
         now = time.time()
         ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
         ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
@@ -77,7 +79,8 @@ class Visualizer(Node):
             bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
         else:
             bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
-
+        if bandwidth == 0:
+            self.get_logger().info(f"Bandwidth timeout {n1} {n2}")
         return bandwidth + 1e-9
 
     def draw_network(self) -> None:
@@ -87,7 +90,7 @@ class Visualizer(Node):
         graph = nx.Graph()
         # bandwidths = deepcopy(self.bandwidths)
         self.get_logger().info("STARTING add weights")
-        
+
         # bandwidth_set = set()
         # updated_bandwidth = {}
         # for src,dst in bandwidths.keys():
@@ -95,7 +98,7 @@ class Visualizer(Node):
         #         continue
         #     else:
         #         bandwidth_set.add((src,dst))
-        # #updating the bandwidths 
+        # #updating the bandwidths
         # for src,dst in bandwidth_set:
         #     updated_bandwidth[(src,dst)] = round(min(bandwidths[(src,dst)], bandwidths[(dst,src)]),2)
 
@@ -107,7 +110,7 @@ class Visualizer(Node):
         graph.add_weighted_edges_from(
             [(src, dst, bw) for (src, dst), bw in edge_labels.items()]
         )
-       
+
         pos = nx.planar_layout(graph)
         fig = plt.figure()
         nx.draw(
