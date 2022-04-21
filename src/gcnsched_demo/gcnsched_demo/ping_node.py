@@ -51,7 +51,7 @@ class PingNode(Node):
         for ip in self.IPList:
             result = subprocess.run(
             # Command as a list, to avoid shell=True
-            ['ping', '-c', str(self.numPings),'-s','1000', ip],
+            ['ping', '-c', str(self.numPings),'-s','10000', ip],
             stdout=PIPE
             )
             avgValues[ip] = 0
