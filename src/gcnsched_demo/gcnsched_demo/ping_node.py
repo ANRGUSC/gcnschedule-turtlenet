@@ -19,6 +19,9 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rcl_interfaces.msg import ParameterType
 
 list_of_ip = ['rpi-tb1', 'rpi-tb2', 'rpi-tb3', 'rpi-tb4']
+adhoc_ip = ['192.168.7.1','192.168.7.2','192.168.7.3','192.168.7.4']
+
+ADHOC = True
 
 class PingNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) ->None:
@@ -33,12 +36,15 @@ class PingNode(Node):
         self.numPings = 1
         self.pubDict = {}
         if not other_nodes:
-            self.get_logger.info("Error: could not find other nodes")
+            self.get_logger().info("Error: could not find other nodes")
         
         cb_group = ReentrantCallbackGroup()
         self.name = name
         self.IPList = [ip for ip in list_of_ip if name[-1] not in ip]
-        print(self.IPList)
+        if ADHOC:
+            self.IPList = [ip for ip in adhoc_ip if name[-1] != ip[-1] ]
+
+        self.get_logger().info(f'{self.IPList}')
         for other_node in other_nodes:
             self.pubDict[other_node] = self.create_publisher(Float64, f'/{other_node}/delay',10, callback_group=cb_group)
         self.create_timer(self.interval, self.timer_callback)
@@ -47,11 +53,11 @@ class PingNode(Node):
     def timer_callback(self):
         avgValues = {}
         start = time.time()
-        # self.get_logger().info("In timer callback")
+        self.get_logger().info("In timer callback")
         for ip in self.IPList:
             result = subprocess.run(
             # Command as a list, to avoid shell=True
-            ['ping', '-c', str(self.numPings),'-s','10000', ip],
+            ['ping', '-c', str(self.numPings),'-s','1000', ip],
             stdout=PIPE
             )
             avgValues[ip] = 0
