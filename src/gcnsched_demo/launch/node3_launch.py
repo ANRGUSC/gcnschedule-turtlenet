@@ -29,7 +29,7 @@ def generate_launch_description():
             parameters=[
                 {'name': node_name, 'other_nodes': other_nodes, }
             ]
-        )
+        ),
         Node(
             package='gcnsched_demo',
             node_executable='ping',
