@@ -47,7 +47,7 @@ class PingNode(Node):
     def timer_callback(self):
         avgValues = {}
         start = time.time()
-        self.get_logger().info("In timer callback")
+        # self.get_logger().info("In timer callback")
         for ip in self.IPList:
             result = subprocess.run(
             # Command as a list, to avoid shell=True
@@ -62,14 +62,14 @@ class PingNode(Node):
                     try:
                         avgValues[ip] += float(timing)
                     except ValueError:
-                        self.get_logger.info('Failed Ping')
+                        self.get_logger().info('Failed Ping')
                         # print("Failed Ping")
                     except Exception as ex:
-                        self.get_logger.info(f'Exception: {type(ex).__name__}')
+                        self.get_logger().info(f'Exception: {type(ex).__name__}')
         time_taken = time.time() - start
         print("Time taken ", time_taken)
         for ip in avgValues:
-            self.get_logger.info(f'{ip} {avgValues[ip]/self.numPings}')
+            self.get_logger().info(f'{ip} {avgValues[ip]/self.numPings}')
             print(ip, avgValues[ip]/self.numPings)
         # TODO: Add publishing code here
 
