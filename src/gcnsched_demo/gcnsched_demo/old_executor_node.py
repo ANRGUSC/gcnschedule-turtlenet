@@ -1,6 +1,7 @@
+import os
 from interfaces.srv import Executor
 import rclpy
-from rclpy.node import Node, Publisher
+from rclpy.node import Node, Client
 
 import json
 from typing import Dict, List, Set, Generator, Tuple, Any
@@ -8,7 +9,10 @@ from queue import Queue
 from threading import Thread
 
 from .task_graph import TaskGraph, deserialize, get_graph
+
 from std_msgs.msg import String
+from rclpy.executors import MultiThreadedExecutor
+import multiprocessing
 
 class ExecutorNode(Node):
     def __init__(self,
@@ -22,16 +26,29 @@ class ExecutorNode(Node):
         name = self.get_parameter('name').get_parameter_value().string_value
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
 
+
+
+
         self.name = name
         self.graph = graph
         self.data: Dict[str, str] = {}
         self.execution_history: Dict[str, Set] = {}
         self.queue = Queue()
 
-        self.create_subscription(String, "executor", self.executor_callback)
-        self.executor_topics = {}
+        self.srv = self.create_service(
+            Executor, 'executor',
+            self.executor_callback
+        )
+
+        self.executor_clients: Dict[str, Client] = {}
         for other_node in other_nodes:
-            self.executor_topics[other_node] = self.create_publisher(String, f"/{other_node}/executor")
+            # self.executor_clients[other_node] = self.create_client(Executor, f'/{other_node}/executor')
+            cli = self.create_client(
+                Executor, f'/{other_node}/executor'
+            )
+            self.executor_clients[other_node] = cli
+            while not cli.wait_for_service(timeout_sec=1.0):
+                self.get_logger().warning(f'service {other_node}/executor not available, waiting again...')
 
         self.publish_current_task = True
         if self.publish_current_task:
@@ -42,28 +59,50 @@ class ExecutorNode(Node):
 
         self.output_publish: Publisher = self.create_publisher(String, "/output")
 
-        self.get_logger().debug("Executor node has started!")
-
         thread = Thread(target=self.proccessing_thread)
         thread.start()
 
         self.get_logger().debug("EXECUTOR NODE HAS STARTED :)")
 
-    def executor_callback(self, msg):
+    def executor_callback(self, request, response) -> Executor.Response:
         self.get_logger().debug(f"RECEIVED A REQUEST TO EXECUTE")
-        self.queue.put(msg.data)
+        self.queue.put(request.input)
+        response.output = "ACK"
+        self.get_logger().debug("SENDING ACK")
+        return response
 
-    def _send_req(self, next_node, msg_str):
-        self.get_logger().debug(f"SENDING TO {next_node}")
-        msg = String()
-        msg.data = msg_str
-        self.executor_topics[next_node].publish(msg)
+    def _send_req(self, next_node, req):
+        self.get_logger().debug(f"CALLING {next_node}")
+        res = self.executor_clients[next_node].call(req)
+        self.get_logger().debug(f"ACK FROM {next_node}: {req.output}")
+        return
 
     def proccessing_thread(self) -> None:
         while True:
-            msg_str = self.queue.get()
-            for next_node, out_msg in self.process_message(msg_str):
-                self._send_req(next_node, out_msg)
+            msg = self.queue.get()
+            for next_node, out_msg in self.process_message(msg):
+                req = Executor.Request()
+                req.input = out_msg
+                temp_start = time.time()
+                # Start bar as a process
+                p = multiprocessing.Process(target=self._send_req, args=(next_node,req))
+                self.get_logger().debug("****STARTING PROCESS*****")
+                p.start()
+
+                # Wait for 10 seconds or until process finishes
+                p.join(5)
+                self.get_logger().debug("****_send_req finished or 5 sec passed*****")
+
+                # If thread is still active
+                if p.is_alive():
+                    self.get_logger().debug("****FAILED*****")
+
+                    # Terminate - may not work if process is stuck for good
+                    # p.terminate()
+                    # OR Kill - will work for sure, no chance for process to finish nicely however
+                    p.kill()
+
+                    p.join()
 
     def process_message(self, msg_str: str) -> Generator[Tuple[str, str], None, None]:
         msg: Dict[str, Any] = json.loads(msg_str)
@@ -132,6 +171,7 @@ class ExecutorNode(Node):
                 else:
                     self.get_logger().debug(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
+
 
 def main(args=None):
     rclpy.init(args=args)
