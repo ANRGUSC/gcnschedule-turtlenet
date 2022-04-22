@@ -1,6 +1,7 @@
 from asyncio.subprocess import PIPE
 from code import interact
 from lib2to3.pytree import Node
+from pprint import pformat
 import random
 import subprocess
 import time
@@ -18,11 +19,12 @@ from typing import List
 import os
 from rclpy.exceptions import ParameterNotDeclaredException
 from rcl_interfaces.msg import ParameterType
+import psutil
 
 list_of_ip = ['rpi-tb1', 'rpi-tb2', 'rpi-tb3', 'rpi-tb4']
 adhoc_ip = ['192.168.7.1','192.168.7.2','192.168.7.3','192.168.7.4']
 
-ADHOC = True
+ADHOC = False
 
 class PingNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) ->None:
@@ -52,6 +54,13 @@ class PingNode(Node):
         self.create_timer(self.interval, self.timer_callback)
         for ip in self.pubDict:
             self.get_logger().info(f"{ip}")
+    
+
+    def kill(self, proc_pid):
+        process = psutil.Process(proc_pid)
+        for proc in process.children(recursive=True):
+            proc.kill()
+        process.kill()
 
     def timer_callback(self):
        
@@ -59,15 +68,23 @@ class PingNode(Node):
         start = time.time()
         self.get_logger().info("In timer callback")
         for ip in self.IPList:
-            result = subprocess.run(
+            result = subprocess.Popen(
             # Command as a list, to avoid shell=True
             ['ping', '-c', str(self.numPings),'-s','1000', ip],
             stdout=PIPE
             )
+            try:
+                result.wait(timeout=1.5)
+            except subprocess.TimeoutExpired:
+                self.kill(result.pid)
+                avgValues[ip] = 0
+                continue
+            
             # For debugging use random else 0
             # flip = random.randint(0,2)
             avgValues[ip] = 0#round(random.uniform(1,100), 2) if flip < 2 else 0
-            for line in result.stdout.splitlines():
+            # self.get_logger().info(f"result.stdout:" + pformat(result.stdout))
+            for line in result.stdout:
                 line = line.decode("utf-8")
                 if "icmp_seq" in line:                    
                     timing = line.split('time=')[-1].split(' ms')[0]
