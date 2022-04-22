@@ -65,8 +65,8 @@ class PingNode(Node):
             stdout=PIPE
             )
             # For debugging use random else 0
-            flip = random.randint(0,2)
-            avgValues[ip] = round(random.uniform(1,100), 2) if flip < 2 else 0
+            # flip = random.randint(0,2)
+            avgValues[ip] = 0#round(random.uniform(1,100), 2) if flip < 2 else 0
             for line in result.stdout.splitlines():
                 line = line.decode("utf-8")
                 if "icmp_seq" in line:                    
