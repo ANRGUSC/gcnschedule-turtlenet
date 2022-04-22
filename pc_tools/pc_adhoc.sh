@@ -1,5 +1,8 @@
 #change this correct wireless interface(type iwconfig in your terminal)
-WIRELESS_INTERFACE="wlx1cbfce96f922"
+#WIRELESS_INTERFACE="wlx1cbfce96f922"
+WIRELESS_INTERFACE="wlp5s0"
+
+sudo service network-manager stop
 
 sudo ip link set $WIRELESS_INTERFACE down
 

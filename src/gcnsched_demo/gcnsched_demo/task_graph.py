@@ -72,7 +72,7 @@ class TaskGraph:
         def _fun(*args, **kwargs) -> Any:
             args = [deserialize(arg) for arg in args]
             kwargs = {
-                key: deserialize(value) 
+                key: deserialize(value)
                 for key, value in kwargs.items()
             }
             return serialize(fun(*args, **kwargs))
@@ -95,7 +95,7 @@ class TaskGraph:
 
     def end_tasks(self) -> List[str]:
         source_tasks = {
-            dep.name for _, task in self.task_names.items() 
+            dep.name for _, task in self.task_names.items()
             for dep in self.task_deps[task]
         }
         return list(set(self.task_names.keys()) - source_tasks)
@@ -122,13 +122,13 @@ def get_graph() -> TaskGraph:
         graph: nx.DiGraph = pickle.loads(graph_pickle.read_bytes())
         if workflow is None or graph.order() <= workflow.order():
             workflow = graph
-        
+
     task_graph = TaskGraph()
 
     visited = {}
     final_nodes = []
     task_functions = {}
-    
+
     queue = [task_name for task_name in workflow.nodes if workflow.in_degree(task_name) == 0]
     while queue:
         node = queue.pop(0)
@@ -142,7 +142,7 @@ def get_graph() -> TaskGraph:
 
         if task_type not in task_functions:
             task_functions[task_type] = partial(fake_execute, task_type, runtime/1000)
-        
+
         deps = [
             visited[dep_name] for dep_name, _ in workflow.in_edges(node)
         ]
@@ -150,8 +150,8 @@ def get_graph() -> TaskGraph:
 
         if workflow.out_degree(node) == 0:
             final_nodes.append(visited[node])
-    
+
     return task_graph
-    
+
 if __name__ == "__main__":
     print(get_graph())

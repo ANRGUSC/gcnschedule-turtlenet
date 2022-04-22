@@ -9,7 +9,13 @@ for val in ${PACKAGENAMES[@]}; do
    PACKAGES+=$val" "
 done
 echo $PACKAGES
-colcon build --packages-select $PACKAGES --allow-overriding $PACKAGES && . install/setup.bash 
-if [ $1 = "run" ]; then
-    ros2 launch gcnsched_demo $LAUNCH_FILE
+colcon build --packages-select $PACKAGES --allow-overriding $PACKAGES && . install/setup.bash
+
+if [ $# -eq 0 ]
+    then
+        echo "No arguments supplied"
+    else
+        if [ $1 = "run" ]; then
+            ros2 launch gcnsched_demo $LAUNCH_FILE
+        fi
 fi

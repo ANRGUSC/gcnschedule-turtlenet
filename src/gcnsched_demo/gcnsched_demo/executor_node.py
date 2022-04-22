@@ -10,6 +10,9 @@ from threading import Thread
 from .task_graph import TaskGraph, deserialize, get_graph
 from std_msgs.msg import String
 
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from rclpy.qos import QoSProfile, QoSPresetProfiles
+
 class ExecutorNode(Node):
     def __init__(self,
                  name: str,
@@ -28,19 +31,19 @@ class ExecutorNode(Node):
         self.execution_history: Dict[str, Set] = {}
         self.queue = Queue()
 
-        self.create_subscription(String, "executor", self.executor_callback)
+        self.create_subscription(String, "executor", self.executor_callback, qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
         self.executor_topics = {}
         for other_node in other_nodes:
-            self.executor_topics[other_node] = self.create_publisher(String, f"/{other_node}/executor")
+            self.executor_topics[other_node] = self.create_publisher(String, f"/{other_node}/executor",qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
 
         self.publish_current_task = True
         if self.publish_current_task:
-            self.current_task_publisher: Publisher = self.create_publisher(String, "current_task")
+            self.current_task_publisher: Publisher = self.create_publisher(String, "current_task",qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
             s = String()
             s.data = "done"
             self.current_task_publisher.publish(s)
 
-        self.output_publish: Publisher = self.create_publisher(String, "/output")
+        self.output_publish: Publisher = self.create_publisher(String, "/output",qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
 
         self.get_logger().debug("Executor node has started!")
 

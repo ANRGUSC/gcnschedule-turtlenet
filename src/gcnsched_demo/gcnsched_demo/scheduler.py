@@ -27,6 +27,9 @@ import matplotlib.patches as mpatches
 from matplotlib import cm
 from cv_bridge import CvBridge
 
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from rclpy.qos import QoSProfile, QoSPresetProfiles
+
 class Scheduler(Node):
     def __init__(self) -> None:
         super().__init__('scheduler')
@@ -47,22 +50,21 @@ class Scheduler(Node):
 
         self.executor_topics = {}
         for node in nodes:
-            self.executor_topics[node] = self.create_publisher(String, f"/{node}/executor")
+            self.executor_topics[node] = self.create_publisher(String, f"/{node}/executor", qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
-            if src == dst:
-                continue
-            self.create_subscription(
-                Float64, f"/{src}/{dst}/bandwidth",
-                partial(self.bandwidth_callback, src, dst)
-            )
+            if src != dst:
+                self.create_subscription(
+                    Float64, f"/{src}/{dst}/bandwidth",
+                    partial(self.bandwidth_callback, src, dst),
+                    qos_profile=QoSPresetProfiles.SENSOR_DATA.value
+                )
 
-        self.create_subscription(String, "/output", self.output_callback)
-        self.makespan_publisher = self.create_publisher(Float64, "/makespan", 10)
+        self.create_subscription(String, "/output", self.output_callback, qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
+        self.makespan_publisher = self.create_publisher(Float64, "/makespan", qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
 
-        self.graph_publisher: Publisher = self.create_publisher(Image, "/taskgraph")
-
+        self.graph_publisher: Publisher = self.create_publisher(Image, "/taskgraph", qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
         self.create_timer(2, self.draw_task_graph)
         self.create_timer(self.interval, self.execute)
         # self.create_timer(1, self.print_active_threads)
@@ -72,7 +74,8 @@ class Scheduler(Node):
         for node in nodes:
             self.create_subscription(
                 String, f"/{node}/current_task",
-                partial(self.current_task_callback, node)
+                partial(self.current_task_callback, node),
+                qos_profile=QoSPresetProfiles.SENSOR_DATA.value
             )
 
         self.create_timer(self.interval, self.execute)

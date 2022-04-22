@@ -4,7 +4,7 @@ import time
 from typing import Dict, List, Tuple
 
 import rclpy
-from rclpy.node import Node,  Publisher
+from rclpy.node import Node, Publisher
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
 
@@ -14,6 +14,9 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from cv_bridge import CvBridge
+
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from rclpy.qos import QoSProfile, QoSPresetProfiles
 
 class Visualizer(Node):
     def __init__(self,
@@ -35,17 +38,19 @@ class Visualizer(Node):
                 continue
             self.create_subscription(
                 Float64, f"/{src}/{dst}/bandwidth",
-                partial(self.bandwidth_callback, src, dst)
+                partial(self.bandwidth_callback, src, dst),
+                qos_profile=QoSPresetProfiles.SENSOR_DATA.value
             )
 
-        self.network_publisher: Publisher = self.create_publisher(Image, "/network")
+        self.network_publisher: Publisher = self.create_publisher(Image, "/network", qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
         self.create_timer(self.interval, self.draw_network)
 
         self.current_tasks: Dict[str, str] = {}
         for node in nodes:
             self.create_subscription(
                 String, f"/{node}/current_task",
-                partial(self.current_task_callback, node)
+                partial(self.current_task_callback, node),
+                qos_profile=QoSPresetProfiles.SENSOR_DATA.value
             )
 
     def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
