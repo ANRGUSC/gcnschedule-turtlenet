@@ -62,10 +62,11 @@ class Scheduler(Node):
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
-            self.create_subscription(
-                Float64, f"/{src}/{dst}/delay",
-                partial(self.delay_callback, src, dst)
-            )
+            if src != dst:
+                self.create_subscription(
+                    Float64, f"/{src}/{dst}/delay",
+                    partial(self.delay_callback, src, dst)
+                )
 
         self.create_subscription(String, "/output", self.output_callback)
         self.makespan_publisher = self.create_publisher(Float64, "/makespan", 10)
@@ -84,8 +85,8 @@ class Scheduler(Node):
 
     def get_bandwidth(self, n1: str, n2: str) -> float:
         avg = (self.bandwidths.get((n1,n2),0) + self.bandwidths.get((n2,n1),0)) / 2
-        return (round(avg,2) 
-                if self.bandwidths.get((n1,n2),0) != 0.0 and 
+        return (round(avg,2)
+                if self.bandwidths.get((n1,n2),0) != 0.0 and
                     self.bandwidths.get((n2,n1),0) != 0.0
                     else 1e-9
                     )
