@@ -22,7 +22,7 @@ from rcl_interfaces.msg import ParameterType
 list_of_ip = ['rpi-tb1', 'rpi-tb2', 'rpi-tb3', 'rpi-tb4']
 adhoc_ip = ['192.168.7.1','192.168.7.2','192.168.7.3','192.168.7.4']
 
-ADHOC = False
+ADHOC = True
 
 class PingNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) ->None:
