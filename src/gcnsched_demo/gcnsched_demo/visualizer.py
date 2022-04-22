@@ -99,7 +99,7 @@ class Visualizer(Node):
         
         # Code to take the minimum
         for src,dst in self.bandwidths: 
-            edge_labels[(src,dst)] = round(min(self.bandwidths[(src,dst)], self.bandwidths[(dst,src)]),2)
+            edge_labels[(src,dst)] = round(min(self.bandwidths.get((src,dst),(0)) , self.bandwidths.get((src,dst),(0)) ),2)
         
         self.get_logger().info("EDGE:"+pformat(edge_labels))
 

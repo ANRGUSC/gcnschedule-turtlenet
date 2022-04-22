@@ -31,6 +31,9 @@ import matplotlib.patches as mpatches
 from matplotlib import cm
 from cv_bridge import CvBridge
 
+BYTES_SENT = 1000
+
+
 class Scheduler(Node):
     def __init__(self,
                  nodes: List[str],
@@ -60,8 +63,8 @@ class Scheduler(Node):
         self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
             self.create_subscription(
-                Float64, f"/{src}/{dst}/bandwidth",
-                partial(self.bandwidth_callback, src, dst)
+                Float64, f"/{src}/{dst}/delay",
+                partial(self.delay_callback, src, dst)
             )
 
         self.create_subscription(String, "/output", self.output_callback)
@@ -80,15 +83,22 @@ class Scheduler(Node):
         self.create_timer(self.interval, self.execute)
 
     def get_bandwidth(self, n1: str, n2: str) -> float:
-        now = time.time()
-        ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
-        ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
-        if ptime_1 > ptime_2:
-            bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
-        else:
-            bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
+        avg = (self.bandwidths.get((n1,n2),0) + self.bandwidths.get((n2,n1),0)) / 2
+        return (round(avg,2) 
+                if self.bandwidths.get((n1,n2),0) != 0.0 and 
+                    self.bandwidths.get((n2,n1),0) != 0.0
+                    else 1e-9
+                    )
+        # now = time.time()
+        # ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
+        # ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
+        # if ptime_1 > ptime_2:
+        #     bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
+        # else:
+        #     bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
 
-        return bandwidth + 1e-9
+        # return bandwidth + 1e-9
+        pass
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
@@ -102,8 +112,9 @@ class Scheduler(Node):
         except:
             self.get_logger().error(traceback.format_exc())
 
-    def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
-        self.bandwidths[(src, dst)] = time.time(), msg.data
+    def delay_callback(self, src: str, dst: str, msg: Float64) -> None:
+        bandwidth =  (BYTES_SENT/1000) / (msg.data/1000) if msg.data != 0.0 else 0.0
+        self.bandwidths[(src, dst)] = bandwidth
 
     def get_schedule(self) -> Dict[str, str]:
         try:
