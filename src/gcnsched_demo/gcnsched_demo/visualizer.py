@@ -32,7 +32,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from cv_bridge import CvBridge
 
-BYTES_SENT = 1000
+BYTES_SENT = 100
 
 class Visualizer(Node):
     def __init__(self,

@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 node_name = 'node3'
-other_nodes = ['node1', 'node4']
+other_nodes = ['node1', 'node2' ,'node4']
 interval = 5.0
 
 def generate_launch_description():

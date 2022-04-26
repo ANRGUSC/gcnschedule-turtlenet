@@ -3,7 +3,7 @@ from launch_ros.actions import Node
 
 # node_name = 'node1'
 # other_nodes = ['node2'] #'node3', 'node4']
-nodes = ['node1', 'node3', 'node4']
+nodes = ['node1', 'node2', 'node3', 'node4']
 
 def generate_launch_description():
     return LaunchDescription([

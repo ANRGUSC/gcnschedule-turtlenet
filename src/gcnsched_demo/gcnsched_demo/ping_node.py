@@ -21,8 +21,8 @@ from rclpy.exceptions import ParameterNotDeclaredException
 from rcl_interfaces.msg import ParameterType
 import psutil
 
-list_of_ip = ['rpi-tb1', 'rpi-tb3', 'rpi-tb4']
-adhoc_ip = ['192.168.7.1','192.168.7.3','192.168.7.4']
+list_of_ip = ['rpi-tb1', 'rpi-tb2','rpi-tb3', 'rpi-tb4']
+adhoc_ip = ['192.168.7.1','192.168.7.2', '192.168.7.3','192.168.7.4']
 
 ADHOC = True
 
@@ -70,7 +70,7 @@ class PingNode(Node):
         for ip in self.IPList:
             result = subprocess.Popen(
             # Command as a list, to avoid shell=True
-            ['ping', '-c', str(self.numPings),'-s','1000', ip],
+            ['ping', '-c', str(self.numPings),'-s','100', ip],
             stdout=PIPE
             )
             try:
