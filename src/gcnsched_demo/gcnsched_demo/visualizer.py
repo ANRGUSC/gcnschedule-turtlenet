@@ -91,15 +91,15 @@ class Visualizer(Node):
         graph = nx.Graph()
         edge_labels = {}
         # Code to take the average of the values but assigns 0 if any of the values is 0
-        # for src,dst in self.bandwidths: 
-        #     avg = (self.bandwidths[(src,dst)] + self.bandwidths[(dst,src)])/2
-        #     edge_labels[(src,dst)] = (round(avg, 2)
-        #                                 if self.bandwidths[(src,dst)] != 0.0 and self.bandwidths[(dst,src)] != 0.0 
-        #                                 else 0.0)
+        for src,dst in self.bandwidths: 
+            avg = (self.bandwidths.get((src,dst),(0)) + self.bandwidths.get((src,dst),(0)))/2
+            edge_labels[(src,dst)] = (round(avg, 2)
+                                        if self.bandwidths.get((src,dst),(0)) != 0.0 and self.bandwidths.get((src,dst),(0)) != 0.0 
+                                        else 0.0)
         
         # Code to take the minimum
-        for src,dst in self.bandwidths: 
-            edge_labels[(src,dst)] = round(min(self.bandwidths.get((src,dst),(0)) , self.bandwidths.get((src,dst),(0)) ),2)
+        # for src,dst in self.bandwidths: 
+        #     edge_labels[(src,dst)] = round(min(self.bandwidths.get((src,dst),(0)) , self.bandwidths.get((src,dst),(0)) ),2)
         
         self.get_logger().info("EDGE:"+pformat(edge_labels))
 

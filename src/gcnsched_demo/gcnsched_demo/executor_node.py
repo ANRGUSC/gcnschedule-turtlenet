@@ -55,11 +55,11 @@ class ExecutorNode(Node):
         self.get_logger().info("EXECUTOR NODE HAS STARTED :)")
 
     def executor_callback(self, msg):
-        self.get_logger().info(f"RECEIVED A REQUEST TO EXECUTE")
+        # self.get_logger().info(f"RECEIVED A REQUEST TO EXECUTE")
         self.queue.put(msg.data)
 
     def _send_req(self, next_node, msg_str):
-        self.get_logger().info(f"SENDING TO {next_node}")
+        # self.get_logger().info(f"SENDING TO {next_node}")
         msg = String()
         msg.data = msg_str
         self.executor_topics[next_node].publish(msg)
@@ -135,7 +135,7 @@ class ExecutorNode(Node):
                 if self.name == next_node:
                     yield from self.process_message(msg)
                 else:
-                    self.get_logger().info(f"SENDING {task} TO {next_node}")
+                    # self.get_logger().info(f"SENDING {task} TO {next_node}")
                     yield next_node, msg
 
 

@@ -42,7 +42,7 @@ class Scheduler(Node):
         super().__init__('scheduler')
         #getting parameters from the launch file
         self.declare_parameter('nodes', [])
-        self.declare_parameter('interval', 25)
+        self.declare_parameter('interval', 30)
         self.declare_parameter('scheduler', 'gcn')
         nodes = self.get_parameter('nodes').get_parameter_value().string_array_value
         interval = self.get_parameter('interval').get_parameter_value().integer_value

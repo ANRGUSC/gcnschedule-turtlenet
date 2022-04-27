@@ -31,7 +31,7 @@ class PingNode(Node):
         super().__init__("ping")
         self.declare_parameter('name', 'default_node')
         self.declare_parameter('other_nodes',[])
-        self.declare_parameter('interval',5)
+        self.declare_parameter('interval',7)
         self.interval = self.get_parameter('interval').get_parameter_value().double_value
         name = self.get_parameter('name').get_parameter_value().string_value
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
@@ -65,8 +65,8 @@ class PingNode(Node):
     def timer_callback(self):
        
         avgValues = {}
-        start = time.time()
-        self.get_logger().info("In timer callback")
+        # start = time.time()
+        # self.get_logger().info("In timer callback")
         for ip in self.IPList:
             result = subprocess.Popen(
             # Command as a list, to avoid shell=True
@@ -95,11 +95,11 @@ class PingNode(Node):
                         # print("Failed Ping")
                     except Exception as ex:
                         self.get_logger().info(f'Exception: {type(ex).__name__}')
-        time_taken = time.time() - start
-        self.get_logger().info(f"Time taken {time_taken}")
+        # time_taken = time.time() - start
+        # self.get_logger().info(f"Time taken {time_taken}")
         for ip in avgValues:
             self.get_logger().info(f'{ip} {avgValues[ip]/self.numPings}')
-            print(ip, avgValues[ip]/self.numPings)
+            # print(ip, avgValues[ip]/self.numPings)
             msg = Float64()
             msg.data = avgValues[ip]/self.numPings
          # TODO: Add publishing code here
