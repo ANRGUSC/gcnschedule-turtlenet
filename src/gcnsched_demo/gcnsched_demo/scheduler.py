@@ -84,22 +84,21 @@ class Scheduler(Node):
         self.create_timer(self.interval, self.execute)
 
     def get_bandwidth(self, n1: str, n2: str) -> float:
-        avg = (self.bandwidths.get((n1,n2),0) + self.bandwidths.get((n2,n1),0)) / 2
-        return (round(avg,2)
-                if self.bandwidths.get((n1,n2),0) != 0.0 and
-                    self.bandwidths.get((n2,n1),0) != 0.0
-                    else 1e-9
-                    )
-        # now = time.time()
-        # ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
-        # ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
-        # if ptime_1 > ptime_2:
-        #     bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
-        # else:
-        #     bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
+        # avg = (self.bandwidths.get((n1,n2),0) + self.bandwidths.get((n2,n1),0)) / 2
+        # return (round(avg,2)
+        #         if self.bandwidths.get((n1,n2),0) != 0.0 and
+        #             self.bandwidths.get((n2,n1),0) != 0.0
+        #             else 1e-9
+        #             )
+        now = time.time()
+        ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
+        ptime_2, bandwidth_2 = self.bandwidths.get((n2,n1), (0, 0))
+        if ptime_1 > ptime_2:
+            bandwidth = bandwidth_1 if (now - ptime_1) < 10 else 0
+        else:
+            bandwidth = bandwidth_2 if (now - ptime_2) < 10 else 0
 
-        # return bandwidth + 1e-9
-        pass
+        return bandwidth + 1e-9
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
@@ -115,7 +114,7 @@ class Scheduler(Node):
 
     def delay_callback(self, src: str, dst: str, msg: Float64) -> None:
         bandwidth =  (BYTES_SENT/1000) / (msg.data/1000) if msg.data != 0.0 else 0.0
-        self.bandwidths[(src, dst)] = bandwidth
+        self.bandwidths[(src, dst)] = time.time(),bandwidth
 
     def get_schedule(self) -> Dict[str, str]:
         try:

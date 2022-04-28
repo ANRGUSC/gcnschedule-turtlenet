@@ -68,7 +68,7 @@ class Visualizer(Node):
     def delay_callback(self, src: str, dst: str, msg: Float64) -> None:
         # converting delays to bandwidths 
         bandwidth =  (BYTES_SENT/1000) / (msg.data/1000) if msg.data != 0.0 else 0.0
-        self.bandwidths[(src, dst)] = bandwidth
+        self.bandwidths[(src, dst)] = time.time(),bandwidth
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
@@ -91,15 +91,15 @@ class Visualizer(Node):
         graph = nx.Graph()
         edge_labels = {}
         # Code to take the average of the values but assigns 0 if any of the values is 0
-        for src,dst in self.bandwidths: 
-            avg = (self.bandwidths.get((src,dst),(0)) + self.bandwidths.get((src,dst),(0)))/2
-            edge_labels[(src,dst)] = (round(avg, 2)
-                                        if self.bandwidths.get((src,dst),(0)) != 0.0 and self.bandwidths.get((src,dst),(0)) != 0.0 
-                                        else 0.0)
+        # for src,dst in self.bandwidths: 
+        #     avg = (self.bandwidths.get((src,dst),(0)) + self.bandwidths.get((src,dst),(0)))/2
+        #     edge_labels[(src,dst)] = (round(avg, 2)
+        #                                 if self.bandwidths.get((src,dst),(0)) != 0.0 and self.bandwidths.get((src,dst),(0)) != 0.0 
+        #                                 else 0.0)
         
         # Code to take the minimum
-        # for src,dst in self.bandwidths: 
-        #     edge_labels[(src,dst)] = round(min(self.bandwidths.get((src,dst),(0)) , self.bandwidths.get((src,dst),(0)) ),2)
+        for src,dst in self.bandwidths: 
+            edge_labels[(src,dst)] = round(self.get_bandwidth(src,dst),2)
         
         self.get_logger().info("EDGE:"+pformat(edge_labels))
 
