@@ -1,23 +1,25 @@
-import threading
-import traceback
+import asyncio
 from interfaces.srv import Bandwidth
 from std_msgs.msg import Float64
 import rclpy
-from rclpy.node import Node, Publisher
+from rclpy.node import Node, Client, Publisher
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+import time
 from functools import partial
 from typing import List
+import os
+from rclpy.exceptions import ParameterNotDeclaredException
+from rcl_interfaces.msg import ParameterType
 
 
-from .client_timeout import ClientTimeouter
-
-PING_MESSAGE = "hello"*10000
 class BandwidthNode(Node):
     def __init__(self, name: str, other_nodes: List[str], interval: float) -> None:
         super().__init__("bandwidth") #f"{name}_bandwidth")
         self.declare_parameter('name', 'default_node')
         self.declare_parameter('other_nodes',[])
         self.interval = interval
+        print("INTERVAL", interval)
         name = self.get_parameter('name').get_parameter_value().string_value
         other_nodes = self.get_parameter('other_nodes').get_parameter_value().string_array_value
         self.get_logger().info(f"INIT {name}")
@@ -33,45 +35,38 @@ class BandwidthNode(Node):
 
         self.name = name
         for other_node in other_nodes:
-            pub = self.create_publisher(Float64, f"{other_node}/bandwidth", 10, callback_group=cb_group)
-
             cli = self.create_client(Bandwidth, f"/{other_node}/ping", callback_group=cb_group)
-            cli_timeouter = ClientTimeouter(
-                cli,
-                timeout=4,
-                success_callback=partial(self.publish_ping, pub=pub),
-                error_callback=lambda err: self.get_logger().error(str(err)),
-            )
-
-            while not cli.wait_for_service(timeout_sec=2.0):
+            # pub = self.create_publisher(Float64, f"{other_node}/bandwidth", 10, callback_group=cb_group)
+            while not cli.wait_for_service(timeout_sec=1.0):
                 self.get_logger().warning(f'service {other_node}/ping not available, waiting again...')
+            self.create_timer(interval, partial(self.ping_node, cli), callback_group=cb_group)
 
-            self.create_timer(interval, partial(self.ping_node, cli_timeouter, pub), callback_group=cb_group)
+    def publish_ping(self, start: float, req_length: int, *args, **kwargs) -> None:
+        self.get_logger().info("UNSTUCK")
+        dt = time.time() - start
+        self.get_logger().info(f'TIME For Ping service:{dt}')
+        msg = Float64()
+        msg.data = (req_length / dt)/125 # take message size into account
+        self.get_logger().info("publishing")
+        # pub.publish(msg)
 
-        self.get_logger().info("Bandwidth node has started!")
-
-        self.create_timer(1, self.print_active_threads)
-
-    def print_active_threads(self):
-        self.get_logger().info(f"Active Threads: {threading.active_count()}")
-
-
-    def publish_ping(self, dt: float, res, pub: Publisher, *args, **kwargs) -> None:
-        try:
-            self.get_logger().info("ping service success callback")
-            msg = Float64()
-            msg.data = (len(PING_MESSAGE.encode("utf-8")) / dt) / 125000
-            self.get_logger().info(f"publishing {dt} to {pub.topic}")
-            pub.publish(msg)
-        except:
-            self.get_logger().error(traceback.format_exc())
-
-    def ping_node(self, cli: ClientTimeouter, pub: Publisher) -> None:
-        self.get_logger().debug("Inside PING NODE")
+    def ping_node(self, cli: Client) -> None:
+        self.get_logger().info("Inside PING NODE")
+        MSG = "hello"*1000
+        req_length = len(MSG.encode("utf-8"))
         req = Bandwidth.Request()
-        req.a = PING_MESSAGE
-        self.get_logger().info("calling ping service")
-        cli.call(req)
+        req.a = MSG
+        self.get_logger().info("STUCK")
+        #TODO: fix the wait for service
+        temp_start = time.time()
+        if cli.wait_for_service(timeout_sec=self.interval/2):
+            # self.get_logger().info(f'Time until service is ready: {(time.time() - temp_start)}')
+            start = time.time()
+            fut = cli.call_async(req)
+            fut.add_done_callback(partial(self.publish_ping, start, req_length))
+        else: #if wait for service failed
+            self.get_logger().info(f'Time it took to FAIL: {(time.time() - temp_start)}')
+            self.get_logger().info("****FAILED*****")
 
     def ping_callback(self,
                       request: Bandwidth.Request,

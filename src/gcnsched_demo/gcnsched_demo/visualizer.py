@@ -1,19 +1,38 @@
 from functools import partial
 from pprint import pformat
+import random
+from threading import Thread
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Any, Tuple
+
 
 import rclpy
-from rclpy.node import Node,  Publisher
+from rclpy.node import Node, Client, Publisher
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import Image
+        # std_msgs/Header header
+        # uint32 height
+        # uint32 width
+        # string encoding
+        # uint8 is_bigendian
+        # uint32 step
+        # uint8[] data
 
+from interfaces.srv import Executor
+import json
+from uuid import uuid4
+import os
 from itertools import product
 
+from .task_graph import TaskGraph, get_graph
+
+from copy import deepcopy
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from cv_bridge import CvBridge
+
+BYTES_SENT = 100
 
 class Visualizer(Node):
     def __init__(self,
@@ -31,11 +50,9 @@ class Visualizer(Node):
 
         self.bandwidths: Dict[Tuple[str, str], float] = {}
         for src, dst in product(nodes, nodes):
-            if src == dst:
-                continue
             self.create_subscription(
-                Float64, f"/{src}/{dst}/bandwidth",
-                partial(self.bandwidth_callback, src, dst)
+                Float64, f"/{src}/{dst}/delay",
+                partial(self.delay_callback, src, dst)
             )
 
         self.network_publisher: Publisher = self.create_publisher(Image, "/network")
@@ -48,12 +65,14 @@ class Visualizer(Node):
                 partial(self.current_task_callback, node)
             )
 
-    def bandwidth_callback(self, src: str, dst: str, msg: Float64) -> None:
-        self.bandwidths[(src, dst)] = time.time(), msg.data
+    def delay_callback(self, src: str, dst: str, msg: Float64) -> None:
+        # converting delays to bandwidths 
+        bandwidth =  (BYTES_SENT/1000) / (msg.data/1000) if msg.data != 0.0 else 0.0
+        self.bandwidths[(src, dst)] = time.time(),bandwidth
 
     def current_task_callback(self, node: str, msg: String) -> None:
         self.current_tasks[node] = msg.data
-
+        
     def get_bandwidth(self, n1: str, n2: str) -> float:
         now = time.time()
         ptime_1, bandwidth_1 = self.bandwidths.get((n1,n2), (0, 0))
@@ -66,34 +85,34 @@ class Visualizer(Node):
         return bandwidth + 1e-9
 
     def draw_network(self) -> None:
-        # self.get_logger().info("Bandwidths:"+pformat(self.bandwidths))
+        self.get_logger().info("Bandwidths:"+pformat(self.bandwidths))
         self.get_logger().info("Assignment:"+pformat(self.current_tasks))
 
         graph = nx.Graph()
-        # bandwidths = deepcopy(self.bandwidths)
+        edge_labels = {}
+        # Code to take the average of the values but assigns 0 if any of the values is 0
+        # for src,dst in self.bandwidths: 
+        #     avg = (self.bandwidths.get((src,dst),(0)) + self.bandwidths.get((src,dst),(0)))/2
+        #     edge_labels[(src,dst)] = (round(avg, 2)
+        #                                 if self.bandwidths.get((src,dst),(0)) != 0.0 and self.bandwidths.get((src,dst),(0)) != 0.0 
+        #                                 else 0.0)
+        
+        # Code to take the minimum
+        for src,dst in self.bandwidths: 
+            edge_labels[(src,dst)] = round(self.get_bandwidth(src,dst),2)
+        
+        self.get_logger().info("EDGE:"+pformat(edge_labels))
+
         self.get_logger().info("STARTING add weights")
-
-        # bandwidth_set = set()
-        # updated_bandwidth = {}
-        # for src,dst in bandwidths.keys():
-        #     if (src,dst) in bandwidth_set or (dst,src) in bandwidth_set:
-        #         continue
-        #     else:
-        #         bandwidth_set.add((src,dst))
-        # #updating the bandwidths
-        # for src,dst in bandwidth_set:
-        #     updated_bandwidth[(src,dst)] = round(min(bandwidths[(src,dst)], bandwidths[(dst,src)]),2)
-
-        # self.get_logger().info(pformat(updated_bandwidth))
-        edge_labels = {
-            (src, dst): f"{self.get_bandwidth(src, dst):0.2f}"
-            for src, dst in product(self.all_nodes, self.all_nodes)
-        }
-        self.get_logger().info(pformat(edge_labels))
+        
+        # edge_labels = {
+        #     (src, dst): f"{self.get_bandwidth(src, dst):0.2f}"
+        #     for src, dst in product(self.all_nodes, self.all_nodes)
+        # }
         graph.add_weighted_edges_from(
             [(src, dst, bw) for (src, dst), bw in edge_labels.items()]
         )
-
+       
         pos = nx.planar_layout(graph)
         fig = plt.figure()
         nx.draw(
