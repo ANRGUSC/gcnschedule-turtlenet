@@ -26,8 +26,6 @@ To learn more, check out
 >https://github.com/dheera/rosboard
 
 ## Using Docker
-If you opened with Gitpod, you can skip the Setup section!
-
 First build the docker images:
 ```bash
 docker build -t smile_ros -f ros.Dockerfile .
@@ -50,7 +48,7 @@ Follow the **Dashing** guide for setting up your Turtlebots and PC.
 
 https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/
 
-On each machine:
+Install requirements on each machine:
 
 ```
 apt update && apt install -y python3-colcon-common-extensions libjpeg-dev zlib1g-dev python3-pip ffmpeg libsm6 libxext6 ros-dashing-cv-bridge
