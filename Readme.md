@@ -38,6 +38,8 @@ docker pull amir20/dozzle:latest
 docker run --name dozzle -d --volume=/var/run/docker.sock:/var/run/docker.sock -p 8888:8080 amir20/dozzle:latest
 ```
 
+#### To test the system with 4 network nodes (in containers):
+
 ```bash
 docker-compose up -d
 ```
@@ -66,7 +68,7 @@ apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
 pip3 install graphviz pygraphviz
 ```
 
-### To test the system with 4 network-nodes (running locally):
+#### To test the system with 4 network nodes (running locally):
 
 From your colcon workspace
 
