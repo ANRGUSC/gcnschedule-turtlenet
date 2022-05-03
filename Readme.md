@@ -1,5 +1,7 @@
 # GCNSchedule TurtleNet
 
+[![Open In Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/https://github.com/ANRGUSC/gcnschedule-turtlenet)
+
 Graph Convolutional Network-based Scheduler for Distributing Computation in the Internet of Robotic Things
 
 ![Poster_Overview](GCNSchedule-Turtlenet.png)
@@ -26,13 +28,13 @@ To learn more, check out
 >https://github.com/dheera/rosboard
 
 ## Using Docker
-First build the docker images:
+First build the docker images (if you opened in Gitpod, this has already been done - skip this step):
 ```bash
 docker build -t smile_ros -f ros.Dockerfile .
 docker build -t rosboard -f rosboard.Dockerfile .
 ```
 
-Then pull and run Dozzle, a Docker image that's helpful for viewing logs:
+Then pull and run Dozzle, a Docker image that's helpful for viewing logs (if you opened in Gitpod, this is already running - skip this step):
 ```bash
 docker pull amir20/dozzle:latest
 docker run --name dozzle -d --volume=/var/run/docker.sock:/var/run/docker.sock -p 8888:8080 amir20/dozzle:latest
