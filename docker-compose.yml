@@ -1,5 +1,5 @@
 services:
-  robot_1:
+  rpi-tb1:
     command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node1_launch.py"
     environment:
       PYTHONUNBUFFERED: 1
@@ -7,7 +7,7 @@ services:
     volumes:
     - /workspace/gcnschedule-turtlenet/.workspaces/robot_1:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  robot_2:
+  rpi-tb2:
     command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node2_launch.py"
     environment:
       PYTHONUNBUFFERED: 1
@@ -15,7 +15,7 @@ services:
     volumes:
     - /workspace/gcnschedule-turtlenet/.workspaces/robot_2:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  robot_3:
+  rpi-tb3:
     command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node3_launch.py"
     environment:
       PYTHONUNBUFFERED: 1
@@ -23,7 +23,7 @@ services:
     volumes:
     - /workspace/gcnschedule-turtlenet/.workspaces/robot_3:/workspace
     - /workspace/gcnschedule-turtlenet/src:/workspace/src:ro
-  robot_4:
+  rpi-tb4:
     command: bash -c "colcon build && . ./install/setup.sh && ros2 launch gcnsched_demo node4_launch.py"
     environment:
       PYTHONUNBUFFERED: 1

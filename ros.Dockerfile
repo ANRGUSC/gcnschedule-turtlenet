@@ -8,7 +8,7 @@ RUN pip3 install matplotlib networkx torch \
     && pip3 install --upgrade pip && pip3 install opencv-python \
     && pip3 install wfcommons
 
-RUN apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config \
+RUN apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config iputils-ping \
     && pip3 install graphviz pygraphviz
-RUN pip3 install git+https://github.com/ANRGUSC/heft.git
+RUN pip3 install git+https://github.com/ANRGUSC/heft.git && pip3 install psutil
 WORKDIR /workspace 
