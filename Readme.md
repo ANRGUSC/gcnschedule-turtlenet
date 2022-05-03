@@ -1,6 +1,6 @@
 # GCNSchedule TurtleNet
 
-[![Open In Gitpod](https://gitpod.io/#https://github.com/ANRGUSC/gcnschedule-turtlenet)
+[![Open In Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/ANRGUSC/gcnschedule-turtlenet)
 
 Graph Convolutional Network-based Scheduler for Distributing Computation in the Internet of Robotic Things
 
