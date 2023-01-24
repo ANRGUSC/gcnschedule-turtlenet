@@ -77,3 +77,8 @@ From your colcon workspace
 ``colcon build --packages-select interfaces gcnsched_demo rosboard``
 
 ``tmuxp load <gcnsched_demo package dir>/tmuxp_config/test_schedule.yaml``
+
+# Acknowledgements
+This work was supported in part by Army Research Laboratory under Cooperative Agreement W911NF-17-2-0196.
+
+
